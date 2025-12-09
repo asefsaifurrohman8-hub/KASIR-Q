@@ -3,781 +3,834 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warung & Pom POS Pro</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Library Scanner Barcode -->
+    <title>KASIR Q - Genius AI POS</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* --- CSS VARIABLES --- */
+        /* --- CSS VARIABLES & RESET --- */
         :root {
-            --primary: #4834d4;
-            --accent: #686de0;
-            --gradient-start: #4834d4;
-            --gradient-end: #686de0;
-            --bg-body: #F5F6FA;
-            --text-dark: #2f3542;
-            --text-gray: #747d8c;
-            --success: #2ed573;
-            --danger: #ff4757;
-            --warning: #ffa502;
-            --radius-lg: 24px;
-            --safe-top: env(safe-area-inset-top); 
+            --primary: #FFB300;
+            --primary-dark: #F57F17;
+            --dark-bg: #1A1A1D;
+            --bg-body: #F4F4F9;
+            --bg-card: #FFFFFF;
+            --text-main: #1C1C1E;
+            --text-secondary: #8E8E93;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --info: #007AFF;
+            --pertalite: #27ae60;
+            --ai-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --radius-l: 24px;
+            --radius-m: 18px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --transisi: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body {
-            font-family: 'Poppins', sans-serif; background-color: var(--bg-body);
-            color: var(--text-dark); margin: 0; padding: 0;
-            overflow-x: hidden; height: 100vh;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
+        body { margin: 0; padding: 0; background-color: var(--bg-body); font-family: var(--font); color: var(--text-main); overflow-x: hidden; height: 100vh; display: flex; flex-direction: column; }
 
-        .hidden { display: none !important; }
-        .flex { display: flex; }
-        .flex-col { flex-direction: column; }
-        .justify-between { justify-content: space-between; }
-        .items-center { align-items: center; }
-        .gap-2 { gap: 8px; } .p-4 { padding: 16px; }
-        .font-bold { font-weight: 700; }
-        .text-primary { color: var(--primary); }
-        .text-danger { color: var(--danger); }
-        .text-success { color: var(--success); }
-        .w-full { width: 100%; }
+        /* SVG ICONS CONFIG */
+        .icon { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: middle; }
+        .icon-small { width: 16px; height: 16px; }
 
-        /* --- ANIMATIONS --- */
-        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-10px);} 75% {transform: translateX(10px);} }
-        .animate-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .shake { animation: shake 0.3s ease-in-out; }
-
-        /* --- SPLASH SCREEN --- */
+        /* --- SPLASH SCREEN (UPDATED FOR LOGO.PNG) --- */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--primary); z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: white; transition: opacity 0.5s;
+            background: var(--bg-card); z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+            transition: opacity 0.5s ease;
         }
-        .splash-logo { width: 120px; height: 120px; object-fit: contain; margin-bottom: 20px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); }
+        /* GAYA BARU UNTUK GAMBAR LOGO */
+        .splash-img {
+            width: 130px; /* Atur ukuran logo di sini */
+            height: 130px;
+            object-fit: contain; /* Agar gambar tidak gepeng */
+            margin-bottom: 20px;
+            animation: pulseLogo 2s infinite; /* Efek berdenyut */
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1)); /* Bayangan halus */
+        }
         
-        /* --- PIN LOCK SCREEN (BEAUTIFIED) --- */
+        .splash-quote { font-size: 13px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0.5px; opacity: 0; animation: fadeInText 1s 0.5s forwards; margin-top: 10px; }
+        @keyframes pulseLogo { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes fadeInText { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- PIN SCREEN --- */
         #pin-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            /* Menggunakan Gradient agar terlihat premium */
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-            z-index: 9000; color: white;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px;
+            background: linear-gradient(135deg, #141E30, #243B55); z-index: 9000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            padding: 24px; color: white; animation: fadeInScreen 0.5s ease-out;
         }
-        
-        .pin-icon-wrapper {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            width: 70px; height: 70px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-        }
-
-        .pin-dots { display: flex; gap: 15px; margin-bottom: 40px; margin-top: 20px; }
-        .pin-dot { 
-            width: 16px; height: 16px; border-radius: 50%; 
-            border: 2px solid rgba(255,255,255,0.5); 
-            background: transparent; transition: all 0.2s ease; 
-        }
-        .pin-dot.filled { background: white; border-color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(255,255,255,0.5); }
-
-        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; max-width: 320px; }
-        .num-btn {
-            height: 75px; width: 75px; margin: 0 auto;
-            border-radius: 50%; 
-            /* Glassmorphism Buttons */
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 26px; font-weight: 500;
-            cursor: pointer; transition: all 0.1s;
-        }
-        .num-btn:active { background: rgba(255, 255, 255, 0.3); transform: scale(0.95); }
+        @keyframes fadeInScreen { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .pin-dots { display: flex; gap: 20px; margin-bottom: 50px; margin-top: 20px; }
+        .pin-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: all 0.2s; }
+        .pin-dot.filled { background: var(--primary); transform: scale(1.4); box-shadow: 0 0 15px var(--primary); }
+        .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; width: 100%; max-width: 320px; }
+        .pin-btn { width: 75px; height: 75px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: white; font-size: 26px; font-weight: 500; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; backdrop-filter: blur(5px); }
+        .pin-btn:active { background: rgba(255,255,255,0.15); transform: scale(0.92); }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
 
         /* --- LAYOUT --- */
-        #app { max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 90px; }
+        .app-container { flex: 1; overflow-y: auto; padding-bottom: 90px; scrollbar-width: none; }
+        .top-bar { padding: 15px 24px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); margin-top: 10px; }
+        .app-title { font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .btn-settings { background: white; border: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--text-main); box-shadow: var(--shadow); cursor: pointer; }
+        .profile-avatar-small { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: var(--shadow); cursor: pointer; }
+
+        .view-section { display: none; padding: 0 24px; animation: slideUpFade 0.4s ease-out forwards; }
+        .view-section.active { display: block; }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* DASHBOARD & AI INSIGHT */
+        .hero-card { background: var(--dark-bg); color: white; border-radius: var(--radius-l); padding: 24px; box-shadow: 0 12px 30px rgba(0,0,0,0.12); margin-bottom: 24px; position: relative; overflow: hidden; }
+        .hero-balance { font-size: 32px; font-weight: 700; margin-bottom: 20px; color: var(--primary); }
+        .split-stats { display: flex; gap: 15px; margin-top: 10px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .split-item span { display: block; font-size: 11px; opacity: 0.6; margin-bottom: 4px; }
+        .split-item strong { display: block; font-size: 15px; font-weight: 600; }
         
-        .sticky-header {
-            position: sticky; top: 0; z-index: 100; background: var(--bg-body);
-            padding-bottom: 10px;
-        }
-        .header-top { padding: calc(var(--safe-top) + 20px) 24px 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .profile-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); object-fit: cover;}
+        .ai-insight-card { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); padding: 16px; border-radius: var(--radius-m); margin-bottom: 20px; color: #1e3c72; font-size: 13px; display: flex; align-items: flex-start; gap: 12px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        .ai-insight-icon { min-width: 24px; color: #4a00e0; }
 
-        /* --- BALANCE CARD --- */
-        .balance-card {
-            margin: 0 24px;
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-            border-radius: var(--radius-lg); padding: 24px; color: white;
-            box-shadow: 0 10px 25px rgba(72, 52, 212, 0.25);
-            position: relative; overflow: hidden;
-        }
-        .balance-card::before { content:''; position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.1); }
-        .balance-card::after { content:''; position: absolute; bottom: -20px; left: -20px; width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.1); }
-
-        .income-split {
-            display: flex; gap: 12px; margin-top: 20px; padding-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.2);
-        }
-        .split-box {
-            flex: 1; background: rgba(0,0,0,0.15); border-radius: 12px; padding: 10px;
-            display: flex; flex-direction: column;
-        }
-        .split-label { font-size: 10px; opacity: 0.8; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; }
-        .split-val { font-size: 14px; font-weight: 700; }
-
-        /* --- MENU & LISTS --- */
-        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 0 24px; }
-        .menu-item {
-            background: white; border-radius: 18px; padding: 16px 10px;
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.1s;
-        }
-        .menu-item:active { transform: scale(0.95); }
-        .icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .section-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 24px; }
+        .sec-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
+        .alert-card { background: #FFF0F1; color: #D63031; padding: 14px; border-radius: var(--radius-m); display: flex; align-items: center; gap: 12px; margin-bottom: 10px; border: 1px solid rgba(255, 59, 48, 0.1); font-size: 13px; font-weight: 500; }
         
-        .bg-blue { background: #e7f5ff; color: #22a6b3; }
-        .bg-orange { background: #fff3e0; color: #f0932b; }
-        .bg-red { background: #ffebee; color: #eb4d4b; }
-        .bg-green { background: #e8f5e9; color: #6ab04c; }
-        .bg-purple { background: #f3e5f5; color: #be2edd; }
-        .bg-teal { background: #e0f2f1; color: #009688; }
-        .menu-text { font-size: 12px; font-weight: 500; text-align: center; }
+        .best-seller-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .bs-card { min-width: 140px; background: var(--bg-card); padding: 12px; border-radius: var(--radius-m); box-shadow: var(--shadow); border: 1px solid #f8f8f8; }
+        .bs-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .card-list {
-            background: white; border-radius: 16px; padding: 15px; margin-bottom: 12px;
-            display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-        .list-icon { width: 36px; height: 36px; background: #f1f2f6; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+        .product-card { background: var(--bg-card); border-radius: var(--radius-m); padding: 16px; box-shadow: var(--shadow); position: relative; transition: transform 0.2s; display: flex; flex-direction: column; }
+        .product-card:active { transform: scale(0.98); }
+        .p-icon { width: 40px; height: 40px; border-radius: 12px; background: #FFF4E5; color: var(--primary-dark); display: grid; place-items: center; margin-bottom: 12px; }
+        .p-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; line-height: 1.3; }
+        .p-price { font-weight: 700; color: var(--text-main); font-size: 14px; margin-top: auto; }
+        .p-stock { position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 600; background: #eee; padding: 2px 8px; border-radius: 6px; }
+        .stock-low { background: #FFEBEE; color: var(--danger); }
 
-        /* --- BOTTOM NAV --- */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 100%; max-width: 480px; background: white;
-            padding: 10px 30px 20px; display: flex; justify-content: space-between; align-items: center;
-            border-top-left-radius: 24px; border-top-right-radius: 24px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 100;
-        }
-        .nav-btn { color: #a4b0be; font-size: 24px; padding: 10px; text-align: center; }
-        .nav-btn span { font-size: 10px; display: block; margin-top: 4px; }
-        .nav-btn.active { color: var(--primary); }
-        .nav-fab {
-            background: var(--primary); color: white; width: 60px; height: 60px;
-            border-radius: 20px; display: flex; align-items: center; justify-content: center;
-            font-size: 28px; margin-top: -35px; border: 4px solid var(--bg-body);
-            box-shadow: 0 10px 20px rgba(72, 52, 212, 0.3); cursor: pointer;
-        }
-        .nav-fab:active { transform: scale(0.95); }
+        .list-view { display: flex; flex-direction: column; gap: 12px; }
+        .list-item { background: var(--bg-card); padding: 14px; border-radius: var(--radius-m); display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow); }
+        .li-left { display: flex; align-items: center; gap: 12px; }
+        .li-icon { width: 40px; height: 40px; border-radius: 12px; background: #F2F2F7; display: grid; place-items: center; color: #555; }
+        .li-info h4 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+        .li-info p { margin: 0; font-size: 11px; color: var(--text-secondary); }
+        .li-amount { font-weight: 700; font-size: 14px; }
 
-        /* --- PAGES & FORMS --- */
-        .page-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-body); z-index: 200; transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto;
+        /* AI CHAT BUTTON & UI */
+        .btn-ai-float {
+            position: fixed; bottom: 85px; right: 24px;
+            background: var(--ai-gradient);
+            color: white;
+            width: 60px; height: 60px; border-radius: 50%;
+            display: grid; place-items: center; box-shadow: 0 10px 25px rgba(118, 75, 162, 0.4);
+            z-index: 900; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            animation: pulseAI 3s infinite;
         }
-        .page-container.active { transform: translateX(0); }
-        .page-header {
-            padding: calc(var(--safe-top) + 15px) 24px 15px; background: white;
-            display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 10;
+        .btn-ai-float:active { transform: scale(0.9); }
+        @keyframes pulseAI { 0% { box-shadow: 0 0 0 0 rgba(118, 75, 162, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(118, 75, 162, 0); } 100% { box-shadow: 0 0 0 0 rgba(118, 75, 162, 0); } }
+
+        /* AI CHAT MODAL STYLES */
+        .ai-chat-container { display: flex; flex-direction: column; height: 60vh; }
+        .ai-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .ai-msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; }
+        .ai-msg.user { align-self: flex-end; background: #E3F2FD; color: #0D47A1; border-bottom-right-radius: 2px; }
+        .ai-msg.bot { align-self: flex-start; background: #F3E5F5; color: #4A148C; border-bottom-left-radius: 2px; border: 1px solid #E1BEE7; }
+        .ai-msg.bot strong { font-weight: 700; color: #6A1B9A; }
+        .ai-input-area { display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        .ai-input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #ddd; outline: none; }
+        .ai-send { width: 45px; height: 45px; border-radius: 12px; background: var(--ai-gradient); color: white; border: none; display: grid; place-items: center; cursor: pointer; }
+
+        /* POM */
+        .pom-tank-card { background: var(--bg-card); padding: 16px; border-radius: var(--radius-m); margin-bottom: 16px; box-shadow: var(--shadow); }
+        .tank-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .tank-bar-bg { height: 10px; width: 100%; background: #eee; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+        .tank-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+        .pom-display { background: var(--text-main); color: var(--primary); font-family: 'Courier New', monospace; padding: 16px; border-radius: var(--radius-m); text-align: right; font-size: 32px; margin-bottom: 20px; letter-spacing: 1px; }
+
+        /* BOTTOM NAV */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 70px; background: radial-gradient(circle at 50% -25px, transparent 35px, var(--bg-card) 36px); filter: drop-shadow(0 -5px 10px rgba(0,0,0,0.05)); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #C7C7CC; cursor: pointer; transition: color 0.3s; flex: 1; }
+        .nav-spacer { flex: 1.5; pointer-events: none; }
+        .nav-item svg { width: 22px; height: 22px; margin-bottom: 4px; }
+        .nav-item span { font-size: 10px; font-weight: 600; }
+        .nav-item.active { color: var(--text-main); }
+        .nav-item-scan { 
+            position: absolute; left: 50%; top: -25px; transform: translateX(-50%); width: 56px; height: 56px; 
+            background: var(--text-main); color: var(--primary); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; z-index: 1002; box-shadow: none; border: 5px solid var(--bg-body); 
         }
+        .nav-item-scan:active { transform: translateX(-50%) scale(0.95); }
+        .nav-item-scan svg { width: 24px; height: 24px; stroke-width: 2.5; }
+
+        /* UTILS */
+        .search-bar { background: var(--bg-card); padding: 12px 16px; border-radius: var(--radius-m); display: flex; align-items: center; gap: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+        .search-bar input { border: none; background: transparent; width: 100%; font-size: 14px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; }
+        .form-input { width: 100%; padding: 14px; border-radius: 14px; border: 1px solid #E0E0E0; background: var(--bg-card); font-size: 15px; font-family: var(--font); }
+        .btn-full { width: 100%; padding: 16px; border-radius: 16px; background: var(--text-main); color: white; border: none; font-weight: 700; font-size: 15px; margin-top: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-mini { padding: 10px 16px; border-radius: 10px; background: var(--text-main); color: white; border: none; font-size: 12px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px;}
+        .btn-ai-feature { background: var(--ai-gradient) !important; color: white !important; border: none; }
+        .btn-scan-input { background: #333; color: white; border: none; padding: 0 16px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; backdrop-filter: blur(2px); }
+        .modal.show { display: flex; animation: fadeIn 0.2s forwards; }
+        .modal-content { background: var(--bg-body); width: 100%; max-height: 85vh; border-top-left-radius: 28px; border-top-right-radius: 28px; padding: 24px; overflow-y: auto; animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        .form-input { width: 100%; padding: 16px; border: 1px solid #dfe4ea; border-radius: 12px; margin-bottom: 16px; font-family: inherit; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; background: var(--primary); color: white; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;}
-        .pom-display { background: #2f3542; color: #2ed573; padding: 20px; border-radius: 16px; text-align: right; font-family: monospace; border: 4px solid #57606f; margin-bottom: 20px; }
-
-        /* SCANNER STYLES */
-        #reader { width: 100%; border-radius: 16px; overflow: hidden; }
-        #reader video { object-fit: cover; border-radius: 16px; }
+        #scanner-container { width: 100%; border-radius: 24px; margin-bottom: 20px; overflow: hidden; background: black; border: 2px solid #333; }
+        .cart-float { position: fixed; bottom: 85px; left: 24px; right: 24px; background: var(--text-main); color: white; padding: 14px 24px; border-radius: 50px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateY(150px); transition: transform 0.4s; z-index: 100; cursor: pointer; }
+        .cart-float.visible { transform: translateY(0); }
+        #notification { position: fixed; top: 20px; left: 20px; right: 20px; background: var(--text-main); color: white; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; transform: translateY(-100px); transition: transform 0.4s; display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; }
+        #notification.show { transform: translateY(0); }
+        #receipt-area { display: none; }
+        @media print { body * { visibility: hidden; } #receipt-area, #receipt-area * { visibility: visible; } #receipt-area { position: absolute; left: 0; top: 0; width: 100%; } }
+        .hidden { display: none !important; }
+        
+        /* SHORTCUTS */
+        .shortcut-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; margin-top: 10px; }
+        .shortcut-btn { background: var(--bg-card); border-radius: var(--radius-m); padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: var(--shadow); border: none; cursor: pointer; transition: var(--transisi); gap: 8px; }
+        .shortcut-btn:active { transform: scale(0.96); }
+        .shortcut-icon { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; }
+        .shortcut-label { font-size: 11px; font-weight: 600; color: var(--text-main); }
     </style>
 </head>
 <body>
 
-    <!-- 1. SPLASH SCREEN -->
     <div id="splash-screen">
-        <img src="logo.png" alt="Logo" class="splash-logo animate-pop" onerror="this.src='https://placehold.co/150x150/white/4834d4?text=LOGO'">
-        <h2 style="margin: 0;">KASIR Q</h2>
-        <p style="opacity: 0.8; font-size: 12px;">Memuat Aplikasi...</p>
+        <img src="logo.png" alt="KASIR Q Logo" class="splash-img">
+        
+        <div style="font-weight: 800; font-size: 24px;">KASIR Q</div>
+        <div class="splash-quote">"Small Shop, Big Dreams"</div>
     </div>
 
-    <!-- 2. PIN LOCK SCREEN (UPDATED BEAUTIFUL) -->
-    <div id="pin-screen" class="hidden">
-        <div class="pin-icon-wrapper">
-            <i class="ph-fill ph-lock-key" style="font-size: 32px; color: white;"></i>
-        </div>
-        <h3 style="margin:0; font-weight:600;">Masukkan PIN</h3>
-        <p style="margin:5px 0 0; opacity:0.8; font-size:13px;">Akses Keamanan Kasir</p>
-
-        <div class="pin-dots" id="pin-dots">
-            <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
-            <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
-        </div>
-        
-        <div class="numpad">
-            <div class="num-btn" onclick="inputPin(1)">1</div>
-            <div class="num-btn" onclick="inputPin(2)">2</div>
-            <div class="num-btn" onclick="inputPin(3)">3</div>
-            <div class="num-btn" onclick="inputPin(4)">4</div>
-            <div class="num-btn" onclick="inputPin(5)">5</div>
-            <div class="num-btn" onclick="inputPin(6)">6</div>
-            <div class="num-btn" onclick="inputPin(7)">7</div>
-            <div class="num-btn" onclick="inputPin(8)">8</div>
-            <div class="num-btn" onclick="inputPin(9)">9</div>
-            <div class="num-btn" style="background:transparent; border:none; cursor:default;"></div>
-            <div class="num-btn" onclick="inputPin(0)">0</div>
-            <div class="num-btn" onclick="deletePin()" style="background: rgba(255, 71, 87, 0.2); border-color: rgba(255, 71, 87, 0.4);">
-                <i class="ph-bold ph-backspace"></i>
+    <div id="pin-screen">
+        <div style="margin-bottom: 40px; text-align: center;">
+            <div style="display: inline-flex; justify-content: center; align-items: center; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 50%; margin-bottom: 15px;">
+                <svg class="icon" style="width:30px; height:30px; stroke: white;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
             </div>
+            <div class="pin-title" style="font-weight:700; font-size:18px;">Akses Keamanan</div>
+            <div class="pin-subtitle" style="font-size:12px; opacity:0.7;">Masukkan PIN Anda</div>
         </div>
-        <p style="font-size: 11px; opacity: 0.6; margin-top: 30px;">Default PIN: 123456</p>
+        <div class="pin-dots" id="pin-dots"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
+        <div class="pin-pad">
+            <button class="pin-btn" onclick="app.pin.enter(1)">1</button><button class="pin-btn" onclick="app.pin.enter(2)">2</button><button class="pin-btn" onclick="app.pin.enter(3)">3</button>
+            <button class="pin-btn" onclick="app.pin.enter(4)">4</button><button class="pin-btn" onclick="app.pin.enter(5)">5</button><button class="pin-btn" onclick="app.pin.enter(6)">6</button>
+            <button class="pin-btn" onclick="app.pin.enter(7)">7</button><button class="pin-btn" onclick="app.pin.enter(8)">8</button><button class="pin-btn" onclick="app.pin.enter(9)">9</button>
+            <div></div><button class="pin-btn" onclick="app.pin.enter(0)">0</button><button class="pin-btn" onclick="app.pin.del()" style="background:rgba(255,59,48,0.2); border-color:rgba(255,59,48,0.4);"><svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
     </div>
 
-    <!-- 3. MAIN APP -->
-    <div id="app" class="hidden">
-        
-        <!-- DASHBOARD -->
-        <div id="page-dashboard">
-            <div class="sticky-header">
-                <div class="header-top">
-                    <div>
-                        <div style="font-size: 13px; color: var(--text-gray);">Halo, Pemilik</div>
-                        <div style="font-size: 18px; font-weight: 700;" id="dash-store-name">Warung Berkah</div>
-                    </div>
-                    <img src="https://placehold.co/100x100" class="profile-img" id="header-profile" onclick="navTo('settings')">
-                </div>
+    <div id="notification">
+        <svg class="icon" style="color:var(--primary)" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <div id="notif-msg">Notifikasi</div>
+    </div>
 
-                <!-- KARTU SALDO -->
-                <div class="balance-card animate-pop">
-                    <div style="font-size: 13px; opacity: 0.9;">Laba Bersih Hari Ini</div>
-                    <div style="font-size: 32px; font-weight: 700; margin-bottom: 5px;" id="dash-net-profit">Rp 0</div>
-                    
-                    <div class="income-split">
-                        <div class="split-box">
-                            <span class="split-label"><i class="ph-fill ph-shopping-cart"></i> Toko</span>
-                            <span class="split-val" id="dash-toko-income">Rp 0</span>
-                        </div>
-                        <div class="split-box" style="background: rgba(255,255,255,0.2);">
-                            <span class="split-label"><i class="ph-fill ph-gas-pump"></i> Pom</span>
-                            <span class="split-val" id="dash-pom-income">Rp 0</span>
-                        </div>
-                         <div class="split-box" style="background: rgba(255,71,87,0.2);">
-                            <span class="split-label"><i class="ph-fill ph-trend-down"></i> Keluar</span>
-                            <span class="split-val" id="dash-expense-total">Rp 0</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="top-bar">
+        <div class="app-title" id="page-title">Dashboard</div>
+        <div class="header-actions">
+            <button class="btn-settings" onclick="app.openModal('modal-settings')">
+<svg class="icon" viewBox="0 0 24 24">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
+</svg>
 
-            <!-- MENU UTAMA -->
-            <div style="padding: 10px 24px; font-weight: 700; color: var(--text-dark);">Menu Aplikasi</div>
-            <div class="menu-grid">
-                <div class="menu-item" onclick="navTo('pos')">
-                    <div class="icon-box bg-blue"><i class="ph-fill ph-calculator"></i></div>
-                    <span class="menu-text">Kasir</span>
-                </div>
-                <div class="menu-item" onclick="navTo('products')">
-                    <div class="icon-box bg-orange"><i class="ph-fill ph-package"></i></div>
-                    <span class="menu-text">Produk</span>
-                </div>
-                <div class="menu-item" onclick="navTo('pom')">
-                    <div class="icon-box bg-red"><i class="ph-fill ph-gas-pump"></i></div>
-                    <span class="menu-text">Pom Mini</span>
-                </div>
-                <div class="menu-item" onclick="navTo('history')">
-                    <div class="icon-box bg-green"><i class="ph-fill ph-receipt"></i></div>
-                    <span class="menu-text">Riwayat</span>
-                </div>
-                <div class="menu-item" onclick="navTo('expenses')">
-                    <div class="icon-box bg-purple"><i class="ph-fill ph-trend-down"></i></div>
-                    <span class="menu-text">Biaya</span>
-                </div>
-                <div class="menu-item" onclick="navTo('settings')">
-                    <div class="icon-box bg-teal"><i class="ph-fill ph-gear"></i></div>
-                    <span class="menu-text">Setting</span>
+            </button>
+            <img id="header-profile-img" src="" class="profile-avatar-small" onclick="app.openModal('modal-profile')">
+        </div>
+    </div>
+
+    <div class="app-container">
+
+        <section id="view-dashboard" class="view-section active">
+            <div class="hero-card">
+                <div style="font-size:12px; opacity:0.8; margin-bottom:5px; font-weight:600; letter-spacing:1px;">OMZET HARI INI</div>
+                <div class="hero-balance"><span>Rp</span> <span id="dash-omzet">0</span></div>
+                <div class="split-stats">
+                    <div class="split-item"><span>Warung</span><strong id="dash-retail">0</strong></div>
+                    <div style="width:1px; background:rgba(255,255,255,0.2);"></div>
+                    <div class="split-item" style="padding-left:15px;"><span>Pertalite</span><strong id="dash-pom">0</strong></div>
                 </div>
             </div>
             
-            <div style="padding: 20px 24px; font-weight: 700;">Transaksi Terakhir</div>
-            <div id="recent-list" style="padding: 0 24px; padding-bottom: 20px;"></div>
-        </div>
-
-        <!-- PAGE KASIR (POS) -->
-        <div id="page-pos" class="page-container">
-            <div class="page-header">
-                <i class="ph ph-arrow-left" style="font-size: 24px;" onclick="closePage('page-pos')"></i>
-                <h3 style="margin:0; flex:1;">Kasir</h3>
-                <div onclick="showCart()" style="position:relative;">
-                    <i class="ph-fill ph-shopping-cart" style="font-size:24px;"></i>
-                    <span id="cart-badge" style="position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; width:16px; height:16px; border-radius:50%; font-size:10px; display:flex; align-items:center; justify-content:center;">0</span>
-                </div>
+            <div class="ai-insight-card" id="ai-insight-box">
+                <div class="ai-insight-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></div>
+                <div><strong style="display:block; margin-bottom:4px;">Analisis AI Harian</strong><span id="ai-insight-text">Sedang menganalisis data penjualan...</span></div>
             </div>
-            <div class="p-4">
-                <div class="flex gap-2" style="margin-bottom: 16px;">
-                    <input id="pos-search" class="form-input" placeholder="Cari Manual..." onkeyup="renderPos()" style="margin-bottom: 0; height: 50px;">
-                    <button class="btn" style="width: 60px; height: 50px; padding: 0; background: var(--text-dark); border-radius: 12px; margin-bottom: 0;" onclick="openScanner('pos')">
-                        <i class="ph-bold ph-scan" style="font-size: 24px;"></i>
-                    </button>
-                </div>
-                <div id="pos-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
-            </div>
-        </div>
 
-        <!-- PAGE PRODUCTS -->
-        <div id="page-products" class="page-container">
-            <div class="page-header">
-                <i class="ph ph-arrow-left" style="font-size: 24px;" onclick="closePage('page-products')"></i>
-                <h3 style="flex:1;">Produk</h3>
-                <i class="ph-fill ph-plus-circle text-primary" style="font-size:28px;" onclick="showProdModal()"></i>
-            </div>
-            <div class="p-4" id="prod-list"></div>
-        </div>
+            <div id="dashboard-alerts"></div>
+            <div class="section-header-row"><div class="sec-title">Produk Terlaris</div></div>
+            <div id="dashboard-bestsellers" class="best-seller-scroll"></div>
 
-        <!-- PAGE PENGELUARAN -->
-        <div id="page-expenses" class="page-container">
-            <div class="page-header">
-                <i class="ph ph-arrow-left" style="font-size: 24px;" onclick="closePage('page-expenses')"></i>
-                <h3 style="flex:1;">Pengeluaran</h3>
-                <i class="ph-fill ph-plus-circle text-danger" style="font-size:28px;" onclick="showExpModal()"></i>
-            </div>
-            <div class="p-4" id="expense-list"></div>
-        </div>
-
-        <!-- PAGE POM MINI -->
-        <div id="page-pom" class="page-container">
-            <div class="page-header">
-                <i class="ph ph-arrow-left" style="font-size: 24px;" onclick="closePage('page-pom')"></i>
-                <h3 style="margin:0; flex:1;">Pom Mini</h3>
-                <i class="ph-fill ph-gear" style="font-size: 24px;" onclick="document.getElementById('pom-setting-box').classList.toggle('hidden')"></i>
-            </div>
-            <div class="p-4">
-                <div id="pom-setting-box" class="hidden" style="background: #fff3cd; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
-                    <label style="font-size:12px;">Harga Per Liter</label>
-                    <input type="number" id="pom-price-set" class="form-input" style="background:white; margin-bottom:10px;">
-                    <button class="btn" style="padding:10px; background:#ffa502;" onclick="savePomConfig()">Simpan Harga</button>
-                </div>
-
-                <div class="pom-display">
-                    <div style="font-size: 12px; opacity: 0.7;">LITER KELUAR</div>
-                    <div style="font-size: 40px; font-weight: bold;" id="pom-liter-out">0.00 L</div>
-                    <div style="border-top: 1px dashed #57606f; margin: 10px 0;"></div>
-                    <div style="font-size: 14px;">Harga: <span id="pom-price-display">Rp 10.000</span> / L</div>
-                </div>
-
-                <label>Nominal Pembelian (Rp)</label>
-                <input type="number" id="pom-rupiah" class="form-input" style="font-size: 24px; font-weight: bold; color: var(--primary);" placeholder="0" onkeyup="calcPom()">
-                <div class="flex gap-2" style="margin-bottom: 20px;">
-                    <button class="btn" style="background:#dfe4ea; color:#333;" onclick="setPom(10000)">10rb</button>
-                    <button class="btn" style="background:#dfe4ea; color:#333;" onclick="setPom(20000)">20rb</button>
-                    <button class="btn" style="background:#dfe4ea; color:#333;" onclick="setPom(50000)">Full</button>
-                </div>
-                <button class="btn" onclick="printPom()">Cetak Struk</button>
-            </div>
-        </div>
-
-        <!-- PAGE HISTORY -->
-        <div id="page-history" class="page-container">
-            <div class="page-header"><i class="ph ph-arrow-left" style="font-size: 24px;" onclick="closePage('page-history')"></i><h3>Riwayat</h3></div>
-            <div class="p-4" id="tx-list"></div>
-        </div>
-
-        <!-- PAGE SETTINGS -->
-        <div id="page-settings" class="page-container">
-            <div class="page-header"><i class="ph ph-arrow-left" style="font-size: 24px;" onclick="closePage('page-settings')"></i><h3>Pengaturan</h3></div>
-            <div class="p-4">
-                <div style="text-align:center; margin-bottom:20px;">
-                    <img id="setting-img" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid #ddd;">
-                    <br><input type="file" id="up-img" hidden onchange="uploadImg(this)">
-                    <button class="btn" style="width:auto; padding:8px 16px; margin-top:10px; font-size:12px;" onclick="document.getElementById('up-img').click()">Ganti Foto</button>
-                </div>
-                <label>Nama Warung</label><input id="set-name" class="form-input">
-                <label>Alamat</label><input id="set-addr" class="form-input">
-                <div style="margin-top:20px; border-top:1px solid #ddd; padding-top:20px;">
-                    <h4>Keamanan</h4>
-                    <label>Ganti PIN (6 Angka)</label><input type="number" id="set-pin" class="form-input" placeholder="Masukkan PIN Baru">
-                </div>
-                <button class="btn" onclick="saveSettings()">Simpan Semua</button>
-            </div>
-        </div>
-
-        <!-- MODALS -->
-        <!-- 1. CART MODAL -->
-        <div id="modal-cart" class="hidden" style="position:fixed; inset:0; background:white; z-index:300; display:flex; flex-direction:column;">
-            <div class="page-header">
-                <i class="ph ph-x" style="font-size:24px;" onclick="closeModal('modal-cart')"></i>
-                <h3 style="flex:1; text-align:center;">Pesanan</h3>
-                <span class="text-danger" onclick="clearCart()">Batal</span>
-            </div>
-            <div style="background:#f8f9fa; padding:10px; text-align:center; border-bottom:1px dashed #ccc;">
-                <b id="receipt-store-name">Warung Berkah</b>
-                <div style="font-size:12px; color:gray;" id="receipt-date"></div>
-            </div>
-            <div id="cart-list" style="flex:1; overflow-y:auto; padding:16px;"></div>
-            <div style="padding:16px; border-top:1px solid #eee; background: white;">
-                <div class="flex justify-between" style="font-size:18px;"><b>Total</b><b class="text-primary" id="cart-total">Rp 0</b></div>
-                <button class="btn" style="margin-top:15px; background: var(--success);" onclick="checkout()">
-                    <i class="ph-bold ph-printer"></i> Bayar & Cetak
+            <div class="shortcut-grid">
+                <button class="shortcut-btn" onclick="app.navTo('pos')">
+                    <div class="shortcut-icon" style="background:#FFF3E0; color:#F57F17"><svg class="icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg></div>
+                    <div class="shortcut-label">Kasir</div>
+                </button>
+                <button class="shortcut-btn" onclick="app.navTo('pom')">
+                    <div class="shortcut-icon" style="background:#E3F2FD; color:#1976D2"><svg class="icon" viewBox="0 0 24 24"><path d="M3 22v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"></path><path d="M18 22v-8a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v8"></path><path d="M13 2L3 12"></path><path d="M21 2L11 12"></path></svg></div>
+                    <div class="shortcut-label">POM</div>
+                </button>
+                <button class="shortcut-btn" onclick="app.navTo('history')">
+                    <div class="shortcut-icon" style="background:#E8F5E9; color:#388E3C"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+                    <div class="shortcut-label">Riwayat</div>
                 </button>
             </div>
+            <div style="height:30px"></div>
+        </section>
+
+        <section id="view-pos" class="view-section">
+            <div class="search-bar">
+                <svg class="icon" style="color:#999" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="pos-search" placeholder="Cari Manual..." oninput="app.pos.filter(this.value)">
+            </div>
+            <div class="card-grid" id="pos-grid"></div>
+            <div style="height: 80px;"></div>
+        </section>
+
+        <section id="view-pom" class="view-section">
+            <div id="tank-indicators"></div>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <button class="btn-mini" onclick="app.pom.openStockModal()" style="flex:1;"><svg class="icon icon-small" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Isi Tangki</button>
+                <button class="btn-mini btn-ai-feature" onclick="app.pom.aiSuggestPrice()" style="flex:1;">
+                     <svg class="icon icon-small" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg> Cek Pasar
+                </button>
+                <button class="btn-mini" onclick="app.pom.openPriceModal()" style="background:#E0E0E0; color:#333;"><svg class="icon icon-small" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
+            </div>
+            <div class="pom-display">Rp <span id="pom-display-nominal">0</span></div>
+            <div class="form-label">Nominal</div>
+            <div class="form-group"><input type="number" id="pom-input-rp" class="form-input" placeholder="Rp 0" oninput="app.pom.calcByRp(this.value)"></div>
+            <button class="btn-full" style="background: var(--pertalite)" onclick="app.pom.submit()">Bayar Pertalite & Cetak</button>
+        </section>
+
+        <section id="view-products" class="view-section">
+            <div class="search-bar">
+                <input type="text" placeholder="Cari produk..." oninput="app.products.render(this.value)">
+                <button class="btn-mini" style="margin-left:auto" onclick="app.openModal('modal-product')">
+                    <svg class="icon icon-small" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Baru
+                </button>
+            </div>
+            <div class="list-view" id="product-list"></div>
+        </section>
+
+        <section id="view-history" class="view-section">
+            <div class="section-header-row">
+                <div class="sec-title">Transaksi</div>
+                <input type="date" id="filter-date" onchange="app.reports.render(this.value)" style="border:1px solid #ddd; padding:6px; border-radius:8px; font-family:inherit;">
+            </div>
+            <div class="list-view" id="trx-list"></div>
+            
+            <div class="btn-ai-float" onclick="app.ai.openChat()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="cart-float" id="cart-float" onclick="app.pos.openCart()">
+        <div><span style="font-size:10px; opacity:0.8; color:rgba(255,255,255,0.8);">Total</span><strong style="font-size:15px; display:block" id="cart-total-btn">Rp 0</strong></div>
+        <div style="background:white; color:var(--text-main); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;" id="cart-count">0</div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="app.navTo('dashboard')" id="nav-dashboard">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" onclick="app.navTo('pos')" id="nav-pos">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            <span>Kasir</span>
+        </div>
+        
+        <div class="nav-spacer"></div>
+        <div class="nav-item-scan" onclick="app.scanner.start('pos')">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2"></path><path d="M4 16v2a2 2 0 0 0 2 2h2"></path><path d="M16 4h2a2 2 0 0 1 2 2v2"></path><path d="M16 20h2a2 2 0 0 0 2-2v-2"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg>
         </div>
 
-        <!-- 2. PRODUCT MODAL -->
-        <div id="modal-prod" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; display:flex; align-items:flex-end;">
-            <div style="background:white; width:100%; padding:20px; border-radius:20px 20px 0 0;">
-                <h3>Produk</h3>
-                <input type="hidden" id="pd-id">
-                <div class="flex gap-2" style="margin-bottom: 16px;">
-                    <input id="pd-barcode" class="form-input" placeholder="Scan/Input Barcode" style="margin-bottom: 0;">
-                    <button class="btn" style="width:60px; padding:0; background:var(--text-dark); margin-bottom: 0;" onclick="openScanner('product')"><i class="ph-bold ph-scan"></i></button>
+        <div class="nav-item" onclick="app.navTo('products')" id="nav-products">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            <span>Produk</span>
+        </div>
+        <div class="nav-item" onclick="app.navTo('history')" id="nav-history">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>Riwayat</span>
+        </div>
+    </nav>
+
+    <div id="modal-scan" class="modal"><div class="modal-content" style="height:auto; min-height:60vh; background:#000; color:white;"><div class="modal-title" style="color:white; font-weight:700; margin-bottom:10px;">Scan Barcode</div><div id="scanner-container"></div><button class="btn-full" onclick="app.scanner.stop()" style="background:#333;">Tutup</button></div></div>
+
+    <div id="modal-scan-confirm" class="modal"><div class="modal-content" style="height:auto;"><div class="modal-title">Produk Terdeteksi</div><div style="background:#f5f5f5; padding:15px; border-radius:12px; margin-bottom:15px;"><h3 id="scan-res-name" style="margin:0 0 5px 0;"></h3><p id="scan-res-price" style="margin:0; color:#666;"></p></div><div class="form-group"><label class="form-label">Jumlah</label><div style="display:flex; gap:10px;"><button class="btn-mini" onclick="document.getElementById('scan-qty').value--"><svg class="icon icon-small" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line></svg></button><input type="number" id="scan-qty" class="form-input" value="1" style="text-align:center;"><button class="btn-mini" onclick="document.getElementById('scan-qty').value++"><svg class="icon icon-small" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div></div><button class="btn-full" onclick="app.scanner.confirmAdd()">Masuk Keranjang</button></div></div>
+
+    <div id="modal-settings" class="modal" onclick="if(event.target===this) app.closeModal(this.id)">
+        <div class="modal-content">
+            <div class="modal-title" style="font-weight:700; font-size:18px; margin-bottom:20px;">Pengaturan Toko</div>
+            <div class="form-group"><label class="form-label">Nama Toko</label><input type="text" id="prof-shop" class="form-input"></div>
+            <div class="form-group"><label class="form-label">Alamat Toko</label><input type="text" id="set-addr" class="form-input"></div>
+            <div class="form-group">
+                <label class="form-label">Footer Struk</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="set-foot" class="form-input">
+                    <button class="btn-ai-feature btn-mini" onclick="app.ai.generateFooter()"><svg class="icon icon-small" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button>
                 </div>
-                <input id="pd-name" class="form-input" placeholder="Nama Produk">
-                <div class="flex gap-2"><input id="pd-buy" class="form-input" type="number" placeholder="Beli"><input id="pd-sell" class="form-input" type="number" placeholder="Jual"></div>
-                <div class="flex gap-2"><input id="pd-stock" class="form-input" type="number" placeholder="Stok"><button class="btn" onclick="saveProd()">Simpan</button></div>
             </div>
-        </div>
-
-        <!-- 3. EXPENSE MODAL -->
-        <div id="modal-expense" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; display:flex; align-items:flex-end;">
-            <div style="background:white; width:100%; padding:20px; border-radius:20px 20px 0 0;">
-                <h3>Tambah Pengeluaran</h3>
-                <input id="exp-name" class="form-input" placeholder="Keterangan (Cth: Listrik)">
-                <input id="exp-amount" class="form-input" type="number" placeholder="Jumlah (Rp)">
-                <div class="flex gap-2">
-                    <button class="btn" style="background:var(--danger);" onclick="closeModal('modal-expense')">Batal</button>
-                    <button class="btn" onclick="saveExpense()">Simpan</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. SCANNER MODAL -->
-        <div id="modal-scan" class="hidden" style="position:fixed; inset:0; background:black; z-index:400; display:flex; flex-direction:column;">
-            <div style="padding: 20px; color:white; display:flex; justify-content:space-between; align-items:center;">
-                <h3>Scan Barcode</h3>
-                <i class="ph-bold ph-x" style="font-size:24px;" onclick="stopScanner()"></i>
-            </div>
-            <div id="reader" style="width: 100%; height: 300px; background: #000;"></div>
-            <div style="padding:20px; color:white; text-align:center;">Arahkan kamera ke barcode produk</div>
-        </div>
-
-        <!-- BOTTOM NAV -->
-        <div class="bottom-nav">
-            <div class="nav-btn active" onclick="navTo('dashboard')">
-                <i class="ph-fill ph-house"></i><span>Home</span>
-            </div>
-            <div class="nav-fab" onclick="openScanner('pos')">
-                <i class="ph-bold ph-scan"></i>
-            </div>
-            <div class="nav-btn" onclick="navTo('settings')">
-                <i class="ph-fill ph-gear"></i><span>Setting</span>
+            <div class="form-group"><label class="form-label">PIN Akses (6 Angka)</label><input type="number" id="prof-pin" class="form-input" placeholder="******"></div>
+            <div class="form-group"><label class="form-label">Groq API Key (Wajib untuk AI)</label><input type="password" id="set-api-key" class="form-input" placeholder="gsk_..."></div>
+            <button class="btn-full" onclick="app.settings.save()">Simpan Pengaturan</button>
+            <div style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
+                <label class="form-label">Data Management</label>
+                <button class="btn-full" style="background:#333; margin-top:0;" onclick="app.backupData()">Backup JSON</button>
+                <input type="file" id="file-restore" class="hidden" onchange="app.restoreData(this)">
+                <button class="btn-full" style="background:#666; margin-top:10px;" onclick="document.getElementById('file-restore').click()">Restore Data</button>
+                <button class="btn-full" style="background:var(--danger); margin-top:10px;" onclick="location.reload()">Kunci Layar</button>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPT -->
-    <script>
-        // --- DATA STATE ---
-        let db = {
-            store: { name: "Warung Berkah", address: "Jonggol, Jabar", pin: "123456", img: null },
-            products: [],
-            tx: [],
-            expenses: [],
-            pom: { price: 10000 }
-        };
-        let cart = [];
-        let tempPin = "";
-        let html5QrcodeScanner = null;
-        let scanMode = ''; 
+    <div id="modal-profile" class="modal" onclick="if(event.target===this) app.closeModal(this.id)">
+        <div class="modal-content">
+            <div class="modal-title" style="font-weight:700; font-size:18px; margin-bottom:20px;">Profil Pemilik</div>
+            <div style="text-align:center; margin-bottom:20px;">
+                <img id="profile-img-edit" src="" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:12px; box-shadow:var(--shadow);">
+                <br>
+                <label class="btn-mini" style="display:inline-block;">Ganti Foto<input type="file" hidden accept="image/*" onchange="app.profile.handleImage(this)"></label>
+            </div>
+            <div class="form-group"><label class="form-label">Nama Pemilik / Kasir</label><input type="text" id="prof-owner" class="form-input"></div>
+            <button class="btn-full" onclick="app.profile.save()">Simpan Profil</button>
+        </div>
+    </div>
 
-        // --- INIT ---
-        window.onload = () => {
-            const saved = localStorage.getItem('warung_scanner_db');
-            if(saved) db = JSON.parse(saved);
-            else {
-                db.products = [
-                    {id:1, barcode:"899", name:"Kopi Hitam", buy:3000, sell:5000, stock:20}, 
-                    {id:2, barcode:"888", name:"Mie Instan", buy:2500, sell:3500, stock:50}
-                ];
-                if(!db.expenses) db.expenses = [];
-                saveDB();
-            }
+    <div id="modal-ai-chat" class="modal">
+        <div class="modal-content" style="padding:0; height:80vh; max-height:80vh;">
+            <div style="padding:15px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-weight:700; font-size:18px; color:var(--primary-dark); display:flex; align-items:center; gap:8px;">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    Asisten Cerdas
+                </div>
+                <div onclick="app.closeModal('modal-ai-chat')" style="cursor:pointer; font-size:20px;">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </div>
+            </div>
+            <div class="ai-chat-container">
+                <div class="ai-messages" id="ai-chat-box">
+                    <div class="ai-msg bot">Halo! Saya asisten toko Anda. Saya sudah membaca data penjualan hari ini. Ada yang bisa saya bantu?</div>
+                </div>
+                <div class="ai-input-area" style="padding:15px;">
+                    <input type="text" id="ai-user-input" class="ai-input" placeholder="Tanya sesuatu..." onkeypress="if(event.key==='Enter') app.ai.sendChat()">
+                    <button class="ai-send" onclick="app.ai.sendChat()"><svg class="icon" style="stroke:white" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            setTimeout(() => {
-                document.getElementById('splash-screen').style.opacity = 0;
-                setTimeout(() => {
-                    document.getElementById('splash-screen').classList.add('hidden');
-                    document.getElementById('pin-screen').classList.remove('hidden');
-                }, 500);
-            }, 1500);
-        };
-
-        function saveDB() { localStorage.setItem('warung_scanner_db', JSON.stringify(db)); }
-        function fmt(n) { return "Rp " + parseInt(n).toLocaleString('id-ID'); }
-
-        // --- PIN SYSTEM ---
-        function inputPin(n) { if(tempPin.length < 6) { tempPin += n; updatePinUI(); } if(tempPin.length === 6) checkPin(); }
-        function deletePin() { tempPin = tempPin.slice(0, -1); updatePinUI(); }
-        function updatePinUI() {
-            const dots = document.querySelectorAll('.pin-dot');
-            dots.forEach((d, i) => { if(i < tempPin.length) d.classList.add('filled'); else d.classList.remove('filled'); });
-        }
-        function checkPin() {
-            if(tempPin === db.store.pin) {
-                document.getElementById('pin-screen').classList.add('hidden');
-                document.getElementById('app').classList.remove('hidden');
-                updateDash();
-            } else {
-                document.getElementById('pin-dots').classList.add('shake');
-                setTimeout(() => { document.getElementById('pin-dots').classList.remove('shake'); tempPin = ""; updatePinUI(); alert("PIN Salah!"); }, 300);
-            }
-        }
-
-        // --- DASHBOARD ---
-        function updateDash() {
-            document.getElementById('dash-store-name').innerText = db.store.name;
-            if(db.store.img) document.getElementById('header-profile').src = db.store.img;
-
-            const today = new Date().toLocaleDateString();
-            let tokoInc = 0, pomInc = 0, expTotal = 0, totalProfit = 0;
-
-            db.tx.forEach(t => {
-                if(new Date(t.date).toLocaleDateString() === today) {
-                    if(t.type === 'POM') {
-                        pomInc += t.total;
-                        totalProfit += (t.total * 0.1);
-                    } else {
-                        tokoInc += t.total;
-                        totalProfit += t.profit;
-                    }
-                }
-            });
-
-            if(db.expenses) {
-                db.expenses.forEach(e => {
-                    if(new Date(e.date).toLocaleDateString() === today) expTotal += e.amount;
-                });
-            }
-
-            const netProfit = totalProfit - expTotal;
-
-            document.getElementById('dash-net-profit').innerText = fmt(netProfit);
-            document.getElementById('dash-toko-income').innerText = fmt(tokoInc);
-            document.getElementById('dash-pom-income').innerText = fmt(pomInc);
-            document.getElementById('dash-expense-total').innerText = fmt(expTotal);
-
-            const list = document.getElementById('recent-list'); list.innerHTML = '';
-            db.tx.slice(-5).reverse().forEach(t => {
-                const icon = t.type === 'POM' ? 'ph-gas-pump text-danger' : 'ph-shopping-cart text-primary';
-                list.innerHTML += `<div class="card-list"><div class="list-icon"><i class="ph-fill ${icon}"></i></div><div style="flex:1"><b>${t.type||'TOKO'}</b><br><small>${new Date(t.date).toLocaleTimeString()}</small></div><b class="text-success">${fmt(t.total)}</b></div>`;
-            });
-        }
-
-        // --- NAVIGATION ---
-        function navTo(id) {
-            document.querySelectorAll('.page-container').forEach(e => e.classList.remove('active'));
-            if(id === 'dashboard') updateDash();
-            else if(id === 'pos') { renderPos(); document.getElementById('page-pos').classList.add('active'); }
-            else if(id === 'pom') { updatePomUI(); document.getElementById('page-pom').classList.add('active'); }
-            else if(id === 'products') { renderProd(); document.getElementById('page-products').classList.add('active'); }
-            else if(id === 'history') { renderHist(); document.getElementById('page-history').classList.add('active'); }
-            else if(id === 'expenses') { renderExp(); document.getElementById('page-expenses').classList.add('active'); }
-            else if(id === 'settings') { loadSet(); document.getElementById('page-settings').classList.add('active'); }
-        }
-        function closePage(id) { document.getElementById(id).classList.remove('active'); updateDash(); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-        // --- SCANNER LOGIC UPDATED FOR BARCODES ---
-        function openScanner(mode) {
-            scanMode = mode;
-            document.getElementById('modal-scan').classList.remove('hidden');
-            
-            if(!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5QrcodeScanner(
-                    "reader", 
-                    { 
-                        fps: 10, 
-                        qrbox: { width: 250, height: 150 }, // Persegi panjang cocok untuk barcode produk
-                        aspectRatio: 1.0,
-                        // Config Penting: Support Barcode Standar (EAN, UPC, CODE128)
-                        formatsToSupport: [ 
-                            Html5QrcodeSupportedFormats.EAN_13, 
-                            Html5QrcodeSupportedFormats.EAN_8, 
-                            Html5QrcodeSupportedFormats.CODE_128, 
-                            Html5QrcodeSupportedFormats.UPC_A, 
-                            Html5QrcodeSupportedFormats.UPC_E,
-                            Html5QrcodeSupportedFormats.QR_CODE 
-                        ],
-                        videoConstraints: {
-                            facingMode: "environment" // Paksa kamera belakang
-                        }
-                    }
-                );
-            }
-            html5QrcodeScanner.render(onScanSuccess);
-        }
-
-        function onScanSuccess(decodedText, decodedResult) {
-            if(scanMode === 'pos') {
-                stopScanner();
-                const p = db.products.find(x => x.barcode === decodedText);
-                if(p) {
-                    addCart(p.id);
-                    showCart(); 
-                } else {
-                    alert(`Produk dengan barcode ${decodedText} tidak ditemukan.`);
-                }
-            } else if (scanMode === 'product') {
-                stopScanner();
-                document.getElementById('pd-barcode').value = decodedText;
-            }
-        }
-
-        function stopScanner() {
-            if(html5QrcodeScanner) {
-                html5QrcodeScanner.clear().catch(error => console.error("Failed to clear html5QrcodeScanner. ", error));
-            }
-            document.getElementById('modal-scan').classList.add('hidden');
-        }
-
-        // --- POS & CART ---
-        function renderPos() {
-            const g = document.getElementById('pos-grid'); g.innerHTML = '';
-            const k = document.getElementById('pos-search').value.toLowerCase();
-            db.products.filter(p => p.name.toLowerCase().includes(k) || (p.barcode && p.barcode.includes(k))).forEach(p => {
-                g.innerHTML += `<div onclick="addCart(${p.id})" style="background:white; padding:10px; border-radius:12px; border:1px solid #eee;"><b>${p.name}</b><div class="text-primary">${fmt(p.sell)}</div><small>Stok: ${p.stock}</small></div>`;
-            });
-        }
-        function addCart(id) {
-            const p = db.products.find(x=>x.id==id);
-            const ex = cart.find(x=>x.id==id);
-            if(ex) ex.qty++; else cart.push({...p, qty:1});
-            document.getElementById('cart-badge').innerText = cart.length;
-        }
-        function showCart() {
-            document.getElementById('modal-cart').classList.remove('hidden');
-            document.getElementById('receipt-store-name').innerText = db.store.name;
-            document.getElementById('receipt-date').innerText = new Date().toLocaleString();
-            
-            const l = document.getElementById('cart-list'); l.innerHTML = ''; let tot = 0;
-            cart.forEach(c => { 
-                tot += c.sell*c.qty; 
-                l.innerHTML += `
-                <div class="flex justify-between mb-2" style="border-bottom:1px solid #eee; padding-bottom:5px;">
-                    <div>${c.name} <br> <small>x${c.qty}</small></div>
-                    <b>${fmt(c.sell*c.qty)}</b>
-                </div>`; 
-            });
-            document.getElementById('cart-total').innerText = fmt(tot);
-        }
-        function clearCart() { cart=[]; document.getElementById('cart-badge').innerText=0; closeModal('modal-cart'); }
-        function checkout() {
-            let tot = cart.reduce((a,b)=>a+(b.sell*b.qty),0);
-            let prof = cart.reduce((a,b)=>a+((b.sell-b.buy)*b.qty),0);
-            if(!tot) return;
-            cart.forEach(c => { const p = db.products.find(x => x.id === c.id); if(p) p.stock -= c.qty; });
-            db.tx.push({id:Date.now(), date:new Date(), type:'TOKO', total:tot, items:cart, profit:prof});
-            saveDB(); clearCart(); renderPos(); alert("Transaksi Berhasil & Struk Dicetak (Simulasi)");
-        }
-
-        // --- EXPENSES LOGIC ---
-        function renderExp() {
-            const l = document.getElementById('expense-list'); l.innerHTML = '';
-            if(!db.expenses) db.expenses = [];
-            db.expenses.slice().reverse().forEach((e, idx) => {
-                const id = e.id || 0; 
-                l.innerHTML += `
-                    <div class="card-list">
-                        <div class="list-icon text-danger"><i class="ph-fill ph-trend-down"></i></div>
-                        <div style="flex:1"><b>${e.name}</b><br><small>${new Date(e.date).toLocaleDateString()}</small></div>
-                        <div style="text-align:right">
-                            <b class="text-danger">-${fmt(e.amount)}</b>
-                            <br><small class="text-gray" onclick="delExp(${id})">Hapus</small>
+    <div id="modal-product" class="modal" onclick="if(event.target===this) app.closeModal(this.id)">
+        <div class="modal-content">
+            <div class="modal-title" style="font-weight:700; margin-bottom:15px">Edit Produk</div>
+            <form onsubmit="app.products.save(event)">
+                <input type="hidden" id="p-id">
+                <div class="form-group">
+                    <label class="form-label">Nama</label>
+                    <div style="display:flex; gap:8px;">
+                        <input id="p-name" class="form-input" required>
+                        <button type="button" class="btn-ai-feature btn-mini" onclick="app.ai.generateProductDesc()"><svg class="icon icon-small" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></button>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:10px">
+                    <div class="form-group"><label class="form-label">Stok</label><input type="number" id="p-stock" class="form-input" required></div>
+                    <div class="form-group">
+                        <label class="form-label">Barcode</label>
+                        <div style="display:flex; gap:8px;">
+                            <input id="p-code" class="form-input">
+                            <button type="button" class="btn-scan-input" onclick="app.scanner.start('fill')">
+                                <svg class="icon icon-small" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2"></path><path d="M4 16v2a2 2 0 0 0 2 2h2"></path><path d="M16 4h2a2 2 0 0 1 2 2v2"></path><path d="M16 20h2a2 2 0 0 0 2-2v-2"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                            </button>
                         </div>
-                    </div>`;
-            });
-        }
-        function showExpModal() {
-            document.getElementById('modal-expense').classList.remove('hidden');
-            document.getElementById('exp-name').value = '';
-            document.getElementById('exp-amount').value = '';
-        }
-        function saveExpense() {
-            const name = document.getElementById('exp-name').value;
-            const amt = parseInt(document.getElementById('exp-amount').value);
-            if(name && amt) {
-                db.expenses.push({id: Date.now(), date: new Date(), name: name, amount: amt});
-                saveDB(); renderExp(); closeModal('modal-expense');
-            } else { alert("Isi data dengan benar"); }
-        }
-        function delExp(id) {
-            if(confirm("Hapus pengeluaran ini?")) {
-                db.expenses = db.expenses.filter(e => e.id !== id);
-                saveDB(); renderExp();
-            }
-        }
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div class="form-group"><label class="form-label">Modal</label><input type="number" id="p-buy" class="form-input" required></div>
+                    <div class="form-group"><label class="form-label">Jual</label><input type="number" id="p-sell" class="form-input" required></div>
+                </div>
+                <button class="btn-full">Simpan</button>
+                <button type="button" class="btn-full" id="btn-del-prod" onclick="app.products.del()" style="background:var(--danger);display:none;margin-top:10px">Hapus</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="modal-checkout" class="modal" onclick="if(event.target===this) app.closeModal(this.id)"><div class="modal-content"><div class="modal-title" style="font-weight:700; margin-bottom:15px">Pembayaran</div>
+        <div id="ai-checkout-suggest" style="background:#E3F2FD; color:#0D47A1; padding:10px; border-radius:12px; font-size:12px; margin-bottom:15px; display:none; align-items:center; gap:8px;">
+            <svg class="icon icon-small" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 15v-5h-1"></path><path d="M11 12h2"></path></svg> <span id="ai-suggest-text"></span>
+        </div>
+        <div id="checkout-list" style="max-height:30vh;overflow-y:auto;border-bottom:1px dashed #ccc;margin-bottom:10px"></div><div style="display:flex;justify-content:space-between;font-weight:700;font-size:16px;margin-bottom:20px"><span>Total</span><span id="co-total">0</span></div><div class="form-group"><input type="number" id="co-cash" class="form-input" oninput="app.pos.calcChange()" placeholder="Uang diterima..."></div><div style="margin-bottom:20px;font-weight:600;font-size:14px">Kembali: <span id="co-change" style="color:var(--primary-dark)">0</span></div><button class="btn-full" onclick="app.pos.pay()">Bayar & Cetak</button></div></div>
+    
+    <div id="modal-pom-stock" class="modal" onclick="if(event.target===this) app.closeModal(this.id)"><div class="modal-content"><div class="modal-title" style="font-weight:700;">Isi Ulang Tangki</div><div class="form-group"><select id="pom-restock-type" class="form-input"><option value="pertalite">Pertalite</option></select></div><div class="form-group"><input type="number" id="pom-restock-qty" class="form-input" placeholder="Liter..."></div><button class="btn-full" onclick="app.pom.addStock()">Simpan</button></div></div>
+    <div id="modal-pom-price" class="modal" onclick="if(event.target===this) app.closeModal(this.id)"><div class="modal-content"><div class="modal-title" style="font-weight:700;">Edit Harga BBM</div><div class="form-group"><label class="form-label">Pertalite / Liter</label><input type="number" id="price-pertalite" class="form-input"></div><button class="btn-full" onclick="app.pom.savePrices()">Simpan</button></div></div>
 
-        // --- POM MINI ---
-        function updatePomUI() { document.getElementById('pom-price-display').innerText = fmt(db.pom.price); document.getElementById('pom-price-set').value = db.pom.price; }
-        function savePomConfig() { db.pom.price = parseInt(document.getElementById('pom-price-set').value); saveDB(); updatePomUI(); document.getElementById('pom-setting-box').classList.add('hidden'); }
-        function calcPom() { const rp = parseInt(document.getElementById('pom-rupiah').value)||0; document.getElementById('pom-liter-out').innerText = (rp/db.pom.price).toFixed(2)+" L"; }
-        function setPom(v) { document.getElementById('pom-rupiah').value = v; calcPom(); }
-        function printPom() {
-            const rp = parseInt(document.getElementById('pom-rupiah').value)||0; if(!rp) return;
-            db.tx.push({id:Date.now(), date:new Date(), type:'POM', total:rp, items:[], profit:rp*0.1});
-            saveDB(); document.getElementById('pom-rupiah').value=''; calcPom(); alert("Disimpan!");
-        }
+    <div id="receipt-area"></div>
 
-        // --- PRODUCTS ---
-        function renderProd() {
-            const l = document.getElementById('prod-list'); l.innerHTML = '';
-            db.products.forEach(p => {
-                l.innerHTML += `<div class="card-list" onclick="editProd(${p.id})"><div><b>${p.name}</b><br><small>Barcode: ${p.barcode||'-'} | Stok: ${p.stock}</small></div><b>${fmt(p.sell)}</b></div>`;
-            });
-        }
-        function showProdModal() { document.getElementById('modal-prod').classList.remove('hidden'); document.getElementById('pd-id').value=''; document.getElementById('pd-barcode').value=''; document.getElementById('pd-name').value=''; document.getElementById('pd-buy').value=''; document.getElementById('pd-sell').value=''; document.getElementById('pd-stock').value=''; }
-        function editProd(id) {
-            const p = db.products.find(x=>x.id==id);
-            showProdModal();
-            document.getElementById('pd-id').value = p.id;
-            document.getElementById('pd-barcode').value = p.barcode || '';
-            document.getElementById('pd-name').value = p.name;
-            document.getElementById('pd-buy').value = p.buy;
-            document.getElementById('pd-sell').value = p.sell;
-            document.getElementById('pd-stock').value = p.stock;
-        }
-        function saveProd() {
-            const id = document.getElementById('pd-id').value;
-            const obj = {
-                id: id ? parseInt(id) : Date.now(),
-                barcode: document.getElementById('pd-barcode').value,
-                name: document.getElementById('pd-name').value,
-                buy: parseInt(document.getElementById('pd-buy').value),
-                sell: parseInt(document.getElementById('pd-sell').value),
-                stock: parseInt(document.getElementById('pd-stock').value)
-            };
-            if(id) { const idx = db.products.findIndex(x=>x.id==id); db.products[idx]=obj; }
-            else db.products.push(obj);
-            saveDB(); renderProd(); closeModal('modal-prod');
-        }
+    <script>
+        const formatRupiah = (n) => 'Rp ' + parseInt(n).toLocaleString('id-ID');
+        const getID = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-        // --- HISTORY ---
-        function renderHist() {
-            const l = document.getElementById('tx-list'); l.innerHTML = '';
-            db.tx.slice().reverse().forEach(t => { l.innerHTML += `<div class="card-list"><div><b>#${t.id}</b><br><small>${t.type}</small></div><b>${fmt(t.total)}</b></div>`; });
-        }
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const playTone = (f, t, d) => { if(audioCtx.state === 'suspended') audioCtx.resume(); const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type = t; o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + d); o.stop(audioCtx.currentTime + d); };
+        const sfx = { click: () => playTone(800, 'sine', 0.1), success: () => { playTone(1200, 'sine', 0.1); setTimeout(()=>playTone(1800, 'sine', 0.2), 100); }, error: () => playTone(300, 'sawtooth', 0.3) };
 
-        // --- SETTINGS ---
-        function loadSet() { document.getElementById('set-name').value = db.store.name; document.getElementById('set-addr').value = db.store.address; document.getElementById('set-pin').value = ""; if(db.store.img) document.getElementById('setting-img').src = db.store.img; }
-        function saveSettings() { db.store.name = document.getElementById('set-name').value; db.store.address = document.getElementById('set-addr').value; const p = document.getElementById('set-pin').value; if(p && p.length===6) db.store.pin = p; saveDB(); alert("Disimpan"); }
-        function uploadImg(input) { const f = input.files[0]; if(!f) return; const r = new FileReader(); r.onload = (e) => { db.store.img = e.target.result; document.getElementById('setting-img').src = e.target.result; }; r.readAsDataURL(f); }
+        const app = {
+            data: { profile: { name: 'KASIR Q Store', owner: 'Admin', address: 'Indonesia', footer: 'Terima Kasih', pin: '123456', img: null, apiKey: '' }, products: [], transactions: [], cart: [], pomStocks: { pertalite: { price: 12000, stock: 0, capacity: 150 } }, pomConfig: { type: 'pertalite', price: 12000 } },
+            
+            init: () => {
+                const stored = localStorage.getItem('kasirq_v10_ai');
+                if (stored) { 
+                    app.data = JSON.parse(stored); 
+                    // RESET POM TO PERTALITE ONLY IF OLD DATA EXISTS
+                    if(!app.data.pomStocks || app.data.pomStocks.pertamax) app.data.pomStocks = { pertalite: { price: 12000, stock: 0, capacity: 150 } }; 
+                    if(!app.data.profile.apiKey) app.data.profile.apiKey = '';
+                } else { 
+                    app.data.products = [{ id: 'p1', name: 'Contoh Produk', buy: 5000, sell: 7000, stock: 50, code: '123' }]; app.save(); 
+                }
+                
+                const img = app.data.profile.img || 'https://via.placeholder.com/100?text=USER';
+                document.getElementById('header-profile-img').src = img;
+                document.getElementById('profile-img-edit').src = img;
 
+                setTimeout(() => {
+                    document.getElementById('splash-screen').style.opacity = '0';
+                    setTimeout(() => { document.getElementById('splash-screen').remove(); document.getElementById('pin-screen').style.display = 'flex'; }, 500);
+                }, 1500);
+            },
+
+            save: () => localStorage.setItem('kasirq_v10_ai', JSON.stringify(app.data)),
+
+            // --- GENIUS AI LOGIC ---
+            ai: {
+                askGroq: async (prompt, systemPrompt = "You are a helpful assistant.") => {
+                    const apiKey = app.data.profile.apiKey;
+                    if (!apiKey) throw new Error("API Key belum disetting");
+                    
+                    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: "llama-3.3-70b-versatile",
+                            messages: [
+                                { role: "system", content: systemPrompt },
+                                { role: "user", content: prompt }
+                            ]
+                        })
+                    });
+                    const data = await response.json();
+                    return data.choices?.[0]?.message?.content || "Maaf, AI tidak merespon.";
+                },
+
+                openChat: () => {
+                    app.openModal('modal-ai-chat');
+                    setTimeout(() => document.getElementById('ai-user-input').focus(), 500);
+                },
+                addMsg: (text, type) => {
+                    const box = document.getElementById('ai-chat-box');
+                    const div = document.createElement('div');
+                    div.className = `ai-msg ${type}`;
+                    div.innerHTML = type === 'bot' ? marked.parse(text) : text;
+                    box.appendChild(div);
+                    box.scrollTop = box.scrollHeight;
+                },
+                sendChat: async () => {
+                    const input = document.getElementById('ai-user-input');
+                    const text = input.value.trim();
+                    if (!text) return;
+                    if (!app.data.profile.apiKey) { app.ai.addMsg("⚠️ Harap masukkan API Key Groq di Pengaturan.", 'bot'); return; }
+
+                    app.ai.addMsg(text, 'user');
+                    input.value = '';
+                    app.ai.addMsg("Sedang berpikir...", 'bot');
+
+                    const today = new Date().toISOString().split('T')[0];
+                    const salesToday = app.data.transactions.filter(t => t.date.startsWith(today)).reduce((s,t)=>s+t.total,0);
+                    const systemPrompt = `Kamu adalah Asisten Kasir Pintar. Data Toko Hari Ini: Omzet Rp ${salesToday.toLocaleString()}. Jawab singkat, padat, dan membantu.`;
+
+                    try {
+                        const reply = await app.ai.askGroq(text, systemPrompt);
+                        const box = document.getElementById('ai-chat-box'); box.removeChild(box.lastChild); 
+                        app.ai.addMsg(reply, 'bot');
+                    } catch (e) {
+                        const box = document.getElementById('ai-chat-box'); box.removeChild(box.lastChild);
+                        app.ai.addMsg("Gagal koneksi. Cek API Key.", 'bot');
+                    }
+                },
+                generateFooter: async () => {
+                    const shopName = document.getElementById('prof-shop').value || "Toko";
+                    try {
+                        app.notify("AI sedang membuat footer...");
+                        const reply = await app.ai.askGroq(`Buat 1 kalimat footer struk belanja yang ramah, lucu, dan unik untuk "${shopName}". Bahasa Indonesia. Tanpa tanda kutip.`, "Kamu adalah copywriter kreatif.");
+                        document.getElementById('set-foot').value = reply.replace(/"/g, '').trim();
+                        app.notify("Footer berhasil dibuat!");
+                    } catch(e) { app.notify("Gagal: Cek API Key"); }
+                },
+                generateProductDesc: async () => {
+                    const name = document.getElementById('p-name').value;
+                    if(!name) return app.notify("Isi nama produk dulu!");
+                    try {
+                        app.notify("AI membuat nama...");
+                        const reply = await app.ai.askGroq(`Buat nama produk yang lebih menarik dan pendek (max 5 kata) untuk: "${name}". Berikan hanya namanya saja tanpa basa-basi.`, "Marketing Expert.");
+                        document.getElementById('p-name').value = reply.replace(/"/g, '').trim();
+                        app.notify("Nama diperbarui AI!");
+                    } catch(e) { app.notify("Gagal: Cek API Key"); }
+                },
+                analyzeDaily: async () => {
+                    if(!app.data.profile.apiKey) { document.getElementById('ai-insight-text').innerText = "Masukkan API Key di pengaturan untuk mengaktifkan AI."; return; }
+                    const today = new Date().toISOString().split('T')[0];
+                    const tx = app.data.transactions.filter(t => t.date.startsWith(today));
+                    const total = tx.reduce((s,t)=>s+t.total,0);
+                    const prompt = `Total penjualan hari ini Rp ${total.toLocaleString()}. Transaksi: ${tx.length}. Berikan 1 kalimat motivasi bisnis atau tips singkat untuk pemilik toko.`;
+                    try {
+                        const reply = await app.ai.askGroq(prompt, "Kamu konsultan bisnis senior.");
+                        document.getElementById('ai-insight-text').innerText = reply;
+                    } catch(e) { document.getElementById('ai-insight-text').innerText = "AI Offline."; }
+                },
+                getSuggestion: async (cartItems) => {
+                    if(!app.data.profile.apiKey || cartItems.length === 0) { document.getElementById('ai-checkout-suggest').style.display='none'; return; }
+                    const names = cartItems.map(i=>i.name).join(', ');
+                    const prompt = `Pelanggan membeli: ${names}. Sarankan 1 produk lain yang cocok ditawarkan (upselling). Jawab singkat: "Tawarkan [Produk]".`;
+                    try {
+                        const reply = await app.ai.askGroq(prompt, "Sales Expert.");
+                        document.getElementById('ai-suggest-text').innerText = reply;
+                        document.getElementById('ai-checkout-suggest').style.display='flex';
+                    } catch(e) { document.getElementById('ai-checkout-suggest').style.display='none'; }
+                }
+            },
+
+            // --- STANDARD ---
+            pin: {
+                buffer: '',
+                enter: (num) => { sfx.click(); if(app.pin.buffer.length < 6) { app.pin.buffer += num; app.pin.renderDots(); if(app.pin.buffer.length === 6) setTimeout(app.pin.validate, 200); } },
+                del: () => { sfx.click(); app.pin.buffer = app.pin.buffer.slice(0, -1); app.pin.renderDots(); },
+                renderDots: () => { document.querySelectorAll('.pin-dot').forEach((d, i) => { i < app.pin.buffer.length ? d.classList.add('filled') : d.classList.remove('filled'); }); },
+                validate: () => {
+                    if(app.pin.buffer === app.data.profile.pin) { sfx.success(); document.getElementById('pin-screen').style.display = 'none'; app.renderDashboard(); }
+                    else { sfx.error(); const pad = document.querySelector('.pin-pad'); pad.classList.add('shake'); setTimeout(() => { pad.classList.remove('shake'); app.pin.buffer = ''; app.pin.renderDots(); }, 400); }
+                }
+            },
+
+            navTo: (viewId) => {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                document.getElementById('view-' + viewId).classList.add('active');
+                if(document.getElementById('nav-' + viewId)) document.getElementById('nav-' + viewId).classList.add('active');
+                const titles = { 'dashboard': 'Dashboard', 'pos': 'Kasir', 'pom': 'POM Mini', 'products': 'Produk', 'history': 'Riwayat', 'profile': 'Profil' };
+                document.getElementById('page-title').innerText = titles[viewId];
+                if(viewId === 'dashboard') app.renderDashboard();
+                if(viewId === 'pos') app.pos.render();
+                if(viewId === 'products') app.products.render();
+                if(viewId === 'history') app.reports.render();
+                if(viewId === 'pom') app.pom.render();
+            },
+
+            openModal: (id) => { 
+                if(id === 'modal-settings') app.settings.render();
+                if(id === 'modal-profile') app.profile.render();
+                document.getElementById(id).classList.add('show'); 
+            },
+            closeModal: (id) => { document.getElementById(id).classList.remove('show'); },
+            notify: (msg) => { const n = document.getElementById('notification'); document.getElementById('notif-msg').innerText = msg; n.classList.add('show'); setTimeout(() => n.classList.remove('show'), 2000); },
+
+            renderDashboard: () => {
+                const today = new Date().toISOString().split('T')[0];
+                const txToday = app.data.transactions.filter(t => t.date.startsWith(today));
+                const retailSum = txToday.filter(t => t.type === 'retail').reduce((s, t) => s + t.total, 0);
+                const pomSum = txToday.filter(t => t.type === 'pom').reduce((s, t) => s + t.total, 0);
+                document.getElementById('dash-omzet').innerText = parseInt(retailSum + pomSum).toLocaleString('id-ID');
+                document.getElementById('dash-retail').innerText = formatRupiah(retailSum);
+                document.getElementById('dash-pom').innerText = formatRupiah(pomSum);
+
+                const alerts = document.getElementById('dashboard-alerts'); alerts.innerHTML = '';
+                app.data.products.filter(p => p.stock <= 5).forEach(p => { 
+                    alerts.innerHTML += `<div class="alert-card"><svg class="icon icon-small" style="stroke: #D63031" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> <span>Stok <b>${p.name}</b> menipis (${p.stock})</span></div>`; 
+                });
+
+                const bsContainer = document.getElementById('dashboard-bestsellers'); bsContainer.innerHTML = '';
+                const sales = {};
+                app.data.transactions.forEach(t => { if(t.type === 'retail' && t.items) t.items.forEach(i => { sales[i.name] = (sales[i.name] || 0) + i.qty; }); });
+                Object.entries(sales).sort((a,b) => b[1] - a[1]).slice(0, 5).forEach((s, idx) => {
+                    bsContainer.innerHTML += `<div class="bs-card"><div class="bs-rank">#${idx+1}</div><div class="bs-name">${s[0]}</div><div style="font-size:10px; color:#888;">Terjual: ${s[1]}</div></div>`;
+                });
+
+                app.ai.analyzeDaily();
+            },
+
+            scanner: {
+                instance: null, tempProduct: null, mode: 'pos', // 'pos' or 'fill'
+                start: (mode = 'pos') => { 
+                    app.scanner.mode = mode;
+                    app.openModal('modal-scan'); 
+                    if(!app.scanner.instance) { 
+                        app.scanner.instance = new Html5QrcodeScanner("scanner-container", { fps: 10, qrbox: 250 }); 
+                        app.scanner.instance.render(app.scanner.onScan); 
+                    } 
+                },
+                stop: () => { app.closeModal('modal-scan'); },
+                onScan: (decodedText) => {
+                    if (app.scanner.mode === 'fill') {
+                        // FILL INPUT MODE
+                        document.getElementById('p-code').value = decodedText;
+                        app.scanner.stop();
+                        app.notify("Barcode Terisi!");
+                        sfx.success();
+                    } else {
+                        // POS MODE
+                        const p = app.data.products.find(x => x.code == decodedText);
+                        if(p) { 
+                            app.scanner.stop(); app.scanner.tempProduct = p; sfx.success(); 
+                            document.getElementById('scan-res-name').innerText = p.name; 
+                            document.getElementById('scan-res-price').innerText = formatRupiah(p.sell); 
+                            document.getElementById('scan-qty').value = 1; 
+                            app.openModal('modal-scan-confirm'); 
+                        } 
+                        else { app.notify("Produk tidak ditemukan!"); sfx.error(); }
+                    }
+                },
+                confirmAdd: () => { const qty = parseInt(document.getElementById('scan-qty').value); if(qty > 0 && app.scanner.tempProduct) { app.pos.addToCart(app.scanner.tempProduct.id, qty); app.closeModal('modal-scan-confirm'); } }
+            },
+
+            pos: {
+                filter: (key) => {
+                    const grid = document.getElementById('pos-grid'); grid.innerHTML = '';
+                    app.data.products.filter(p => p.name.toLowerCase().includes(key.toLowerCase()) || p.code === key).forEach(p => {
+                        grid.innerHTML += `<div class="product-card" onclick="app.pos.addToCart('${p.id}', 1)"><span class="p-stock ${p.stock<=5?'stock-low':''}">${p.stock}</span><div class="p-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></div><div class="p-name">${p.name}</div><div class="p-price">${formatRupiah(p.sell)}</div></div>`;
+                    });
+                },
+                render: () => app.pos.filter(''),
+                addToCart: (id, qtyAdd) => {
+                    const p = app.data.products.find(x => x.id === id);
+                    if(p.stock <= 0) return app.notify('Stok Habis!');
+                    const exist = app.data.cart.find(x => x.id === id);
+                    if(exist) { if(exist.qty + qtyAdd > p.stock) return app.notify('Stok Kurang!'); exist.qty += qtyAdd; } 
+                    else { if(qtyAdd > p.stock) return app.notify('Stok Kurang!'); app.data.cart.push({...p, qty: qtyAdd}); }
+                    app.pos.updateFloat(); app.notify(`${qtyAdd}x ${p.name} Masuk`);
+                },
+                updateFloat: () => {
+                    const total = app.data.cart.reduce((s, i) => s + (i.sell * i.qty), 0);
+                    const count = app.data.cart.reduce((s, i) => s + i.qty, 0);
+                    document.getElementById('cart-total-btn').innerText = formatRupiah(total);
+                    document.getElementById('cart-count').innerText = count;
+                    const float = document.getElementById('cart-float'); count > 0 ? float.classList.add('visible') : float.classList.remove('visible');
+                },
+                openCart: () => {
+                    const list = document.getElementById('checkout-list'); list.innerHTML = ''; let total = 0;
+                    app.data.cart.forEach(i => { total += i.sell * i.qty; list.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;"><div>${i.name}<br><small>${i.qty} x ${i.sell}</small></div><strong>${formatRupiah(i.qty * i.sell)}</strong></div>`; });
+                    document.getElementById('co-total').innerText = formatRupiah(total); app.pos.currentTotal = total; 
+                    
+                    document.getElementById('ai-checkout-suggest').style.display='none';
+                    app.ai.getSuggestion(app.data.cart);
+
+                    app.openModal('modal-checkout');
+                },
+                calcChange: () => { const cash = parseInt(document.getElementById('co-cash').value) || 0; document.getElementById('co-change').innerText = formatRupiah(Math.max(0, cash - app.pos.currentTotal)); },
+                pay: () => {
+                    const cash = parseInt(document.getElementById('co-cash').value) || 0;
+                    if(cash < app.pos.currentTotal) return app.notify('Uang Kurang!');
+                    const trx = { id: getID(), type: 'retail', date: new Date().toISOString(), items: [...app.data.cart], total: app.pos.currentTotal, cash: cash, change: cash - app.pos.currentTotal };
+                    app.data.transactions.push(trx); app.data.cart.forEach(c => { app.data.products.find(x => x.id === c.id).stock -= c.qty; });
+                    app.save(); app.print(trx); app.data.cart = []; app.pos.updateFloat(); app.closeModal('modal-checkout'); app.notify('Transaksi Sukses!');
+                }
+            },
+
+            pom: {
+                render: () => {
+                    const s = app.data.pomStocks.pertalite;
+                    const container = document.getElementById('tank-indicators'); container.innerHTML = '';
+                    const pct = (s.stock / s.capacity) * 100;
+                    
+                    // SINGLE CARD ONLY FOR PERTALITE
+                    container.innerHTML += `
+                        <div class="pom-tank-card">
+                            <div class="tank-header"><span class="tank-name" style="color:var(--pertalite); font-weight:700;">PERTALITE</span><span style="font-size:11px;">${formatRupiah(s.price)}/L</span></div>
+                            <div class="tank-bar-bg"><div class="tank-bar-fill" style="width:${pct}%; background:var(--pertalite)"></div></div>
+                            <div style="display:flex; justify-content:space-between; font-size:10px; opacity:0.6"><span>${s.stock.toFixed(1)} L</span><span>${s.capacity} L</span></div>
+                        </div>`;
+                },
+                aiSuggestPrice: async () => {
+                    app.notify("AI Cek Harga Pasar...");
+                    const reply = await app.ai.askGroq("Berapa kisaran harga eceran bensin Pertalite di warung madura saat ini? Jawab singkat hanya angka.", "Market Expert");
+                    alert("Saran AI: " + reply);
+                },
+                calcByRp: (val) => { const rp = parseInt(val) || 0; const liter = rp / app.data.pomStocks.pertalite.price; document.getElementById('pom-display-nominal').innerText = rp.toLocaleString(); app.pom.currentTrx = { rp, liter }; },
+                submit: () => {
+                    const { rp, liter } = app.pom.currentTrx || { rp:0, liter:0 };
+                    if(rp <= 0) return app.notify('Input Nominal!');
+                    const stock = app.data.pomStocks.pertalite.stock;
+                    if(liter > stock) return alert('Stok Tangki Habis!');
+                    const trx = { id: getID(), type: 'pom', date: new Date().toISOString(), item: 'pertalite', pricePerLiter: app.data.pomStocks.pertalite.price, liters: liter, total: rp, cash: rp, change: 0 };
+                    app.data.transactions.push(trx); app.data.pomStocks.pertalite.stock -= liter; app.save(); app.print(trx); app.notify('POM Sukses!'); document.getElementById('pom-input-rp').value=''; app.pom.calcByRp(0); app.pom.render();
+                },
+                openStockModal: () => app.openModal('modal-pom-stock'),
+                addStock: () => { const q=parseFloat(document.getElementById('pom-restock-qty').value); if(q>0){ app.data.pomStocks.pertalite.stock+=q; app.save(); app.pom.render(); app.closeModal('modal-pom-stock'); } },
+                openPriceModal: () => { document.getElementById('price-pertalite').value=app.data.pomStocks.pertalite.price; app.openModal('modal-pom-price'); },
+                savePrices: () => { app.data.pomStocks.pertalite.price=parseInt(document.getElementById('price-pertalite').value); app.save(); app.pom.render(); app.closeModal('modal-pom-price'); }
+            },
+
+            products: {
+                render: (k = '') => {
+                    const list = document.getElementById('product-list'); list.innerHTML = '';
+                    app.data.products.filter(p => p.name.toLowerCase().includes(k.toLowerCase())).forEach(p => {
+                        list.innerHTML += `<div class="list-item" onclick="app.products.edit('${p.id}')"><div class="li-left"><div class="li-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></div><div class="li-info"><h4>${p.name}</h4><p>Stok: ${p.stock}</p></div></div><div class="li-amount">${formatRupiah(p.sell)}</div></div>`;
+                    });
+                },
+                edit: (id) => { const p = app.data.products.find(x => x.id === id); document.getElementById('p-id').value=p.id; document.getElementById('p-name').value=p.name; document.getElementById('p-stock').value=p.stock; document.getElementById('p-buy').value=p.buy; document.getElementById('p-sell').value=p.sell; document.getElementById('p-code').value=p.code||''; document.getElementById('btn-del-prod').style.display='block'; app.openModal('modal-product'); },
+                save: (e) => { e.preventDefault(); const id=document.getElementById('p-id').value; const d={id:id||getID(), name:document.getElementById('p-name').value, stock:parseInt(document.getElementById('p-stock').value), buy:parseInt(document.getElementById('p-buy').value), sell:parseInt(document.getElementById('p-sell').value), code:document.getElementById('p-code').value}; id?app.data.products[app.data.products.findIndex(x=>x.id===id)]=d:app.data.products.push(d); app.save(); app.products.render(); app.closeModal('modal-product'); },
+                del: () => { if(confirm('Hapus?')){ app.data.products=app.data.products.filter(x=>x.id!==document.getElementById('p-id').value); app.save(); app.products.render(); app.closeModal('modal-product'); } }
+            },
+
+            reports: {
+                render: (dateFilter = '') => {
+                    const list = document.getElementById('trx-list'); list.innerHTML = '';
+                    let filtered = app.data.transactions.sort((a,b) => new Date(b.date) - new Date(a.date));
+                    if(dateFilter) filtered = filtered.filter(t => t.date.startsWith(dateFilter));
+                    filtered.forEach(t => {
+                        const isPom = t.type === 'pom';
+                        list.innerHTML += `<div class="list-item" onclick='app.print(${JSON.stringify(t)})'><div class="li-left"><div class="li-icon">${isPom? '<svg class="icon icon-small" viewBox="0 0 24 24"><path d="M3 22v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"></path></svg>' : '<svg class="icon icon-small" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path></svg>'}</div><div class="li-info"><h4>${isPom?t.item:'Warung'}</h4><p>${new Date(t.date).toLocaleString()}</p></div></div><div class="li-amount">${formatRupiah(t.total)}</div></div>`;
+                    });
+                }
+            },
+
+            profile: {
+                render: () => { document.getElementById('prof-owner').value = app.data.profile.owner; },
+                handleImage: (input) => { if(input.files[0]){ const r=new FileReader(); r.onload=(e)=>{app.data.profile.img=e.target.result; document.getElementById('header-profile-img').src=e.target.result; document.getElementById('profile-img-edit').src=e.target.result;}; r.readAsDataURL(input.files[0]); } },
+                save: () => { app.data.profile.owner = document.getElementById('prof-owner').value; app.save(); app.notify('Profil Disimpan'); app.closeModal('modal-profile'); }
+            },
+
+            settings: {
+                render: () => { 
+                    document.getElementById('prof-shop').value = app.data.profile.name; 
+                    document.getElementById('set-addr').value = app.data.profile.address;
+                    document.getElementById('set-foot').value = app.data.profile.footer;
+                    document.getElementById('set-api-key').value = app.data.profile.apiKey || '';
+                },
+                save: () => { 
+                    app.data.profile.name = document.getElementById('prof-shop').value; 
+                    app.data.profile.address = document.getElementById('set-addr').value; 
+                    app.data.profile.footer = document.getElementById('set-foot').value;
+                    app.data.profile.apiKey = document.getElementById('set-api-key').value;
+                    const pin = document.getElementById('prof-pin').value; if(pin.length === 6) app.data.profile.pin = pin;
+                    app.save(); app.notify('Pengaturan Disimpan'); app.closeModal('modal-settings');
+                    app.ai.analyzeDaily();
+                }
+            },
+
+            print: (t) => {
+                let content = t.type==='retail' ? t.items.map(i=>`<tr><td>${i.name}<br>${i.qty}x${i.sell}</td><td align="right">${(i.qty*i.sell).toLocaleString()}</td></tr>`).join('') : `<tr><td>${t.item} (${t.liters.toFixed(2)}L)</td><td align="right">${t.total.toLocaleString()}</td></tr>`;
+                document.getElementById('receipt-area').innerHTML = `<div style="font-family:'Courier New'; font-size:12px; width:58mm; text-align:center; padding:10px 0;"><h3 style="margin:0">${app.data.profile.name}</h3><p style="margin:5px 0 10px 0; font-size:10px;">${app.data.profile.address}</p><hr style="border-top:1px dashed #000;"><table width="100%" style="font-size:12px;">${content}</table><hr style="border-top:1px dashed #000;"><table width="100%"><tr><td>Total</td><td align="right">${formatRupiah(t.total)}</td></tr><tr><td>Bayar</td><td align="right">${formatRupiah(t.cash)}</td></tr><tr><td>Kembali</td><td align="right">${formatRupiah(t.change)}</td></tr></table><br><small>${app.data.profile.footer}</small><br><small>${t.date}</small></div>`;
+                window.print();
+            },
+            backupData: () => { const a=document.createElement('a'); a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(app.data)); a.download="KasirQ_AI_Backup.json"; a.click(); },
+            restoreData: (input) => { const r=new FileReader(); r.onload=(e)=>{app.data=JSON.parse(e.target.result); app.save(); location.reload();}; r.readAsText(input.files[0]); }
+        };
+
+        window.onload = app.init;
     </script>
 </body>
 </html>
-
-
