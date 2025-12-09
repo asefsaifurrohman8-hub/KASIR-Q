@@ -2,12 +2,12 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KASIR Q - Genius AI POS</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* --- CSS VARIABLES & RESET --- */
+        /* --- 1. VARIABLES & RESET --- */
         :root {
             --primary: #FFB300;
             --primary-dark: #F57F17;
@@ -29,34 +29,37 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
-        body { margin: 0; padding: 0; background-color: var(--bg-body); font-family: var(--font); color: var(--text-main); overflow-x: hidden; height: 100vh; display: flex; flex-direction: column; }
+        body { 
+            margin: 0; padding: 0; 
+            background-color: var(--bg-body); 
+            font-family: var(--font); 
+            color: var(--text-main); 
+            overflow-x: hidden; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
 
-        /* SVG ICONS CONFIG */
+        /* SVG ICONS */
         .icon { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: middle; }
         .icon-small { width: 16px; height: 16px; }
 
-        /* --- SPLASH SCREEN (UPDATED FOR LOGO.PNG) --- */
+        /* --- 2. SPLASH SCREEN --- */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-card); z-index: 9999;
             display: flex; justify-content: center; align-items: center; flex-direction: column;
             transition: opacity 0.5s ease;
         }
-        /* GAYA BARU UNTUK GAMBAR LOGO */
         .splash-img {
-            width: 130px; /* Atur ukuran logo di sini */
-            height: 130px;
-            object-fit: contain; /* Agar gambar tidak gepeng */
-            margin-bottom: 20px;
-            animation: pulseLogo 2s infinite; /* Efek berdenyut */
-            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1)); /* Bayangan halus */
+            width: 120px; height: 120px; object-fit: contain; margin-bottom: 20px;
+            animation: pulseLogo 2s infinite; filter: drop-shadow(0 10px 20px rgba(255, 179, 0, 0.3));
         }
-        
         .splash-quote { font-size: 13px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0.5px; opacity: 0; animation: fadeInText 1s 0.5s forwards; margin-top: 10px; }
         @keyframes pulseLogo { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         @keyframes fadeInText { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- PIN SCREEN --- */
+        /* --- 3. PIN SCREEN --- */
         #pin-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #141E30, #243B55); z-index: 9000;
@@ -73,9 +76,28 @@
         .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
 
-        /* --- LAYOUT --- */
-        .app-container { flex: 1; overflow-y: auto; padding-bottom: 120px; scrollbar-width: none; }
-        .top-bar { padding: 15px 24px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); margin-top: 20px; }
+        /* --- 4. LAYOUT & SCROLL FIXES (ANTI-NUMPUK) --- */
+        .app-container { 
+            flex: 1; 
+            overflow-y: auto; 
+            /* Memberikan ruang LEGA di bawah agar konten terakhir tidak tertutup Navbar */
+            padding-bottom: calc(180px + env(safe-area-inset-bottom)); 
+            scrollbar-width: none; 
+        }
+        
+        /* TOP BAR */
+        .top-bar { 
+            padding-top: calc(15px + env(safe-area-inset-top)); 
+            padding-bottom: 15px;
+            padding-left: 24px;
+            padding-right: 24px;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: var(--bg-body); 
+            margin-top: 0; 
+        }
+
         .app-title { font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
         .header-actions { display: flex; align-items: center; gap: 12px; }
         .btn-settings { background: white; border: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--text-main); box-shadow: var(--shadow); cursor: pointer; }
@@ -85,8 +107,8 @@
         .view-section.active { display: block; }
         @keyframes slideUpFade { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* DASHBOARD & AI INSIGHT */
-        .hero-card { background: var(--dark-bg); color: white; border-radius: var(--radius-l); padding: 24px; box-shadow: 0 12px 30px rgba(0,0,0,0.12); margin-bottom: 30px; position: relative; overflow: hidden; }
+        /* DASHBOARD STYLES */
+        .hero-card { background: var(--dark-bg); color: white; border-radius: var(--radius-l); padding: 24px; box-shadow: 0 12px 30px rgba(0,0,0,0.12); margin-bottom: 24px; position: relative; overflow: hidden; }
         .hero-balance { font-size: 32px; font-weight: 700; margin-bottom: 20px; color: var(--primary); }
         .split-stats { display: flex; gap: 15px; margin-top: 10px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
         .split-item span { display: block; font-size: 11px; opacity: 0.6; margin-bottom: 4px; }
@@ -120,22 +142,38 @@
         .li-info p { margin: 0; font-size: 11px; color: var(--text-secondary); }
         .li-amount { font-weight: 700; font-size: 14px; }
 
-        /* AI CHAT BUTTON & UI */
+        /* --- 6. FLOATING BUTTONS (FIXED POSITION) --- */
+        /* Posisi dinaikkan CUKUP TINGGI (140px) agar tidak menabrak Navigasi */
         .btn-ai-float {
-            position: fixed; bottom: 90px; bottom: calc(90px + env(safe-area-inset-bottom)); 
-    right: 24px;
-            
+            position: fixed; 
+            bottom: calc(140px + env(safe-area-inset-bottom)); 
+            right: 24px;
             background: var(--ai-gradient);
             color: white;
             width: 60px; height: 60px; border-radius: 50%;
             display: grid; place-items: center; box-shadow: 0 10px 25px rgba(118, 75, 162, 0.4);
-            z-index: 900; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 1100; /* Z-Index lebih tinggi dari Nav */
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
             animation: pulseAI 3s infinite;
         }
         .btn-ai-float:active { transform: scale(0.9); }
+        
+        .cart-float { 
+            position: fixed; 
+            bottom: calc(140px + env(safe-area-inset-bottom));
+            left: 24px; right: 24px; 
+            background: var(--text-main); color: white; 
+            padding: 14px 24px; border-radius: 50px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateY(200px); transition: transform 0.4s; 
+            z-index: 1100; /* Z-Index lebih tinggi dari Nav */
+            cursor: pointer; 
+        }
+        .cart-float.visible { transform: translateY(0); }
+        
         @keyframes pulseAI { 0% { box-shadow: 0 0 0 0 rgba(118, 75, 162, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(118, 75, 162, 0); } 100% { box-shadow: 0 0 0 0 rgba(118, 75, 162, 0); } }
 
-        /* AI CHAT MODAL STYLES */
+        /* --- 7. MODALS --- */
         .ai-chat-container { display: flex; flex-direction: column; height: 60vh; }
         .ai-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
         .ai-msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; }
@@ -146,25 +184,45 @@
         .ai-input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #ddd; outline: none; }
         .ai-send { width: 45px; height: 45px; border-radius: 12px; background: var(--ai-gradient); color: white; border: none; display: grid; place-items: center; cursor: pointer; }
 
-        /* POM */
         .pom-tank-card { background: var(--bg-card); padding: 16px; border-radius: var(--radius-m); margin-bottom: 16px; box-shadow: var(--shadow); }
         .tank-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .tank-bar-bg { height: 10px; width: 100%; background: #eee; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
         .tank-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
         .pom-display { background: var(--text-main); color: var(--primary); font-family: 'Courier New', monospace; padding: 16px; border-radius: var(--radius-m); text-align: right; font-size: 32px; margin-bottom: 20px; letter-spacing: 1px; }
 
-        /* BOTTOM NAV */
-        .bottom-nav { position: fixed; bottom: 40; width: 100%; height: 70px; background: radial-gradient(circle at 50% -25px, transparent 35px, var(--bg-card) 36px); filter: drop-shadow(0 -5px 10px rgba(0,0,0,0.05)); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 1000; }
+        /* --- 8. BOTTOM NAVIGATION (SOLID STYLE) --- */
+        .bottom-nav { 
+            position: fixed; 
+            bottom: calc(30px + env(safe-area-inset-bottom)); 
+            left: 20px; 
+            right: 20px;
+            width: auto;
+            border-radius: 24px;
+            
+            height: 70px; 
+            /* BACKGROUND PUTIH SOLID AGAR TIDAK TEMBUS PANDANG (NUMPUK) */
+            background: #FFFFFF; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15); /* Shadow lebih tebal agar kontras */
+            
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding-left: 20px;
+            padding-right: 20px;
+            z-index: 1000; 
+        }
         .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #C7C7CC; cursor: pointer; transition: color 0.3s; flex: 1; }
         .nav-spacer { flex: 1.5; pointer-events: none; }
         .nav-item svg { width: 22px; height: 22px; margin-bottom: 4px; }
         .nav-item span { font-size: 10px; font-weight: 600; }
         .nav-item.active { color: var(--text-main); }
+        
         .nav-item-scan { 
             position: absolute; left: 50%; top: -25px; transform: translateX(-50%); width: 56px; height: 56px; 
             background: var(--text-main); color: var(--primary); border-radius: 50%; 
             display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; z-index: 1002; box-shadow: none; border: 5px solid var(--bg-body); 
+            cursor: pointer; z-index: 1002; box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+            border: 5px solid var(--bg-body); /* Border menyesuaikan background body agar terlihat 'memotong' */
         }
         .nav-item-scan:active { transform: translateX(-50%) scale(0.95); }
         .nav-item-scan svg { width: 24px; height: 24px; stroke-width: 2.5; }
@@ -186,8 +244,6 @@
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
         #scanner-container { width: 100%; border-radius: 24px; margin-bottom: 20px; overflow: hidden; background: black; border: 2px solid #333; }
-        .cart-float { position: fixed; bottom: 85px; left: 24px; right: 24px; background: var(--text-main); color: white; padding: 14px 24px; border-radius: 50px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateY(150px); transition: transform 0.4s; z-index: 100; cursor: pointer; }
-        .cart-float.visible { transform: translateY(0); }
         #notification { position: fixed; top: 20px; left: 20px; right: 20px; background: var(--text-main); color: white; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; transform: translateY(-100px); transition: transform 0.4s; display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; }
         #notification.show { transform: translateY(0); }
         #receipt-area { display: none; }
@@ -205,10 +261,10 @@
 <body>
 
     <div id="splash-screen">
-        <img src="logo.png" alt="KASIR Q Logo" class="splash-img">
-        
-        <div style="font-weight: 800; font-size: 24px;">KASIR Q</div>
-        <div class="splash-quote">"Small Shop, Big Dreams"</div>
+        <img src="logo.png" alt="Logo" class="splash-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid'">
+        <div style="width:100px; height:100px; background:var(--primary); border-radius:30px; display:none; place-items:center; color:white; margin-bottom:20px; font-size:40px; font-weight:800;">Q</div>
+        <div style="font-weight: 800; font-size: 24px;">KASIR Q v11.0</div>
+        <div class="splash-quote">"Single Fuel. Maximum AI."</div>
     </div>
 
     <div id="pin-screen">
@@ -237,11 +293,12 @@
         <div class="app-title" id="page-title">Dashboard</div>
         <div class="header-actions">
             <button class="btn-settings" onclick="app.openModal('modal-settings')">
-<svg class="icon" viewBox="0 0 24 24">
-    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-    <circle cx="12" cy="12" r="3"></circle>
-</svg>
-
+                <svg class="icon" viewBox="0 0 24 24">
+                    <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
             </button>
             <img id="header-profile-img" src="" class="profile-avatar-small" onclick="app.openModal('modal-profile')">
         </div>
@@ -483,14 +540,13 @@
         const sfx = { click: () => playTone(800, 'sine', 0.1), success: () => { playTone(1200, 'sine', 0.1); setTimeout(()=>playTone(1800, 'sine', 0.2), 100); }, error: () => playTone(300, 'sawtooth', 0.3) };
 
         const app = {
-            data: { profile: { name: 'KASIR Q Store', owner: 'Admin', address: 'Indonesia', footer: 'Terima Kasih', pin: '123456', img: null, apiKey: '' }, products: [], transactions: [], cart: [], pomStocks: { pertalite: { price: 12000, stock: 0, capacity: 150 } }, pomConfig: { type: 'pertalite', price: 12000 } },
+            data: { profile: { name: 'KASIR Q Store', owner: 'Admin', address: 'Indonesia', footer: 'Terima Kasih', pin: '123456', img: null, apiKey: '' }, products: [], transactions: [], cart: [], pomStocks: { pertalite: { price: 10000, stock: 100, capacity: 200 } }, pomConfig: { type: 'pertalite', price: 10000 } },
             
             init: () => {
-                const stored = localStorage.getItem('kasirq_v10_ai');
+                const stored = localStorage.getItem('kasirq_v11_fixed');
                 if (stored) { 
                     app.data = JSON.parse(stored); 
-                    // RESET POM TO PERTALITE ONLY IF OLD DATA EXISTS
-                    if(!app.data.pomStocks || app.data.pomStocks.pertamax) app.data.pomStocks = { pertalite: { price: 12000, stock: 0, capacity: 150 } }; 
+                    if(!app.data.pomStocks || app.data.pomStocks.pertamax) app.data.pomStocks = { pertalite: { price: 10000, stock: 100, capacity: 200 } }; 
                     if(!app.data.profile.apiKey) app.data.profile.apiKey = '';
                 } else { 
                     app.data.products = [{ id: 'p1', name: 'Contoh Produk', buy: 5000, sell: 7000, stock: 50, code: '123' }]; app.save(); 
@@ -506,7 +562,7 @@
                 }, 1500);
             },
 
-            save: () => localStorage.setItem('kasirq_v10_ai', JSON.stringify(app.data)),
+            save: () => localStorage.setItem('kasirq_v11_fixed', JSON.stringify(app.data)),
 
             // --- GENIUS AI LOGIC ---
             ai: {
@@ -747,7 +803,6 @@
                     const container = document.getElementById('tank-indicators'); container.innerHTML = '';
                     const pct = (s.stock / s.capacity) * 100;
                     
-                    // SINGLE CARD ONLY FOR PERTALITE
                     container.innerHTML += `
                         <div class="pom-tank-card">
                             <div class="tank-header"><span class="tank-name" style="color:var(--pertalite); font-weight:700;">PERTALITE</span><span style="font-size:11px;">${formatRupiah(s.price)}/L</span></div>
