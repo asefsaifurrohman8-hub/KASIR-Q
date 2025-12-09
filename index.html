@@ -275,7 +275,7 @@
             margin-bottom: 24px; box-shadow: var(--shadow-float); text-align: center; 
             border: 1px solid #F3F4F6; position: relative; overflow: hidden;
         }
-        .tank-title { font-weight: 900; color: var(--pertalite-color); font-size: 20px; margin-bottom: 6px; display: block; letter-spacing: 1px; }
+        .tank-title { font-weight: 900; color: var(--pertalite-color); font-size: 18px; margin-bottom: 10px; display: block; letter-spacing: 4px; }
         .tank-price { font-size: 13px; color: #6B7280; margin-bottom: 20px; display: block; font-weight: 600; }
         
         .tank-progress-bg { height: 20px; background: #F3F4F6; border-radius: 10px; overflow: hidden; margin-bottom: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
@@ -300,9 +300,9 @@
            8. FORM, BUTTONS & UTILS
            ========================================= */
         .btn-large { 
-            width: 100%; padding: 18px; border-radius: 18px; border: none; 
-            background: var(--text-main); color: white; font-weight: 700; font-size: 16px; 
-            cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; 
+            width: 100%; padding: 15px; border-radius: 20px; border: none; 
+            background: var(--text-main); color: white; font-weight: 500; font-size: 16px; 
+            cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 40px; 
             box-shadow: 0 10px 20px rgba(0,0,0,0.15); transition: transform 0.2s;
         }
         .btn-large:active { transform: scale(0.98); }
@@ -525,12 +525,12 @@
                 <span class="tank-title">PERTALITE</span>
                 <span class="tank-price" id="pom-price-display">Rp 10.000 / Liter</span>
                 <div class="tank-progress-bg"><div class="tank-progress-fill" id="tank-fill" style="width:50%"></div></div>
-                <div style="font-size:12px; opacity:0.6;" id="tank-info">Stok: 50L / 100L</div>
+                <div style="font-size:12px; opacity:0.6;" id="tank-info">Stok: 0L / 100L</div>
             </div>
             
-            <div style="display:flex; gap:12px; margin-bottom:24px;">
+            <div style="display:flex; gap:12px; margin-bottom:15px;">
                 <button class="btn-large" style="flex:1; background:white; color:var(--text-main); font-size:13px; box-shadow:var(--shadow-sm); border:1px solid #E5E7EB;" onclick="app.modal.open('pom-stock')">Isi Tangki</button>
-                <button class="btn-large" style="flex:1; background:#E5E7EB; color:var(--text-main); font-size:13px; box-shadow:none;" onclick="app.modal.open('pom-price')">Set Harga</button>
+                <button class="btn-large" style="flex:1; background:#E5E7EB; color:var(--text-main); font-size:12px; box-shadow:none;" onclick="app.modal.open('pom-price')">Set Harga</button>
             </div>
 
             <div class="pom-lcd-screen">Rp <span id="pom-val-display">0</span></div>
@@ -665,7 +665,7 @@
         </div>
     </div>
 
-    <div id="modal-pom-stock" class="modal"><div class="modal-sheet"><div style="font-weight:800;font-size:20px;margin-bottom:15px">Tambah Stok Pertalite</div><input type="number" id="pom-add-l" class="form-input" placeholder="Jumlah Liter"><br><button class="btn-large" onclick="app.pom.addStock()">Simpan</button><button class="btn-large" style="background:#E5E7EB; color:#333; margin-top:10px" onclick="app.modal.close('pom-stock')">Batal</button></div></div>
+    <div id="modal-pom-stock" class="modal"><div class="modal-sheet"><div style="font-weight:600;font-size:16px;margin-bottom:20px">Tambah Stok Pertalite</div><input type="number" id="pom-add-l" class="form-input" placeholder="Jumlah Liter"><br><button class="btn-large" onclick="app.pom.addStock()">Simpan</button><button class="btn-large" style="background:#E5E7EB; color:#333; margin-top:15px" onclick="app.modal.close('pom-stock')">Batal</button></div></div>
     <div id="modal-pom-price" class="modal"><div class="modal-sheet"><div style="font-weight:800;font-size:20px;margin-bottom:15px">Set Harga Pertalite</div><input type="number" id="pom-set-p" class="form-input" placeholder="Harga per Liter"><br><button class="btn-large" onclick="app.pom.setPrice()">Simpan</button><button class="btn-large" style="background:#E5E7EB; color:#333; margin-top:10px" onclick="app.modal.close('pom-price')">Batal</button></div></div>
 
     <div id="modal-chat" class="modal"><div class="modal-sheet" style="height:75vh; display:flex; flex-direction:column;"><div style="font-weight:800; font-size:18px; padding-bottom:15px; border-bottom:1px solid #eee;">AI Asisten</div><div id="chat-history" class="ai-chat-box"><div class="ai-msg bot">Halo! Saya siap membantu bisnis Anda. Ada yang bisa saya bantu?</div></div><div style="display:flex; gap:10px; margin-top:auto;"><input id="chat-input" class="form-input" placeholder="Ketik pertanyaan..."><button class="btn-ai-pill" style="height:auto; width:60px; justify-content:center;" onclick="app.ai.send()">Kirim</button></div><button class="btn-large" style="background:#E5E7EB; color:#333; margin-top:12px;" onclick="app.modal.close('chat')">Tutup</button></div></div>
@@ -712,7 +712,7 @@
                 transactions: [],
                 expenses: [],
                 cart: [],
-                pom: { price: 10000, stock: 100, capacity: 200 }
+                pom: { price: 12000, stock: 0, capacity: 150 }
             },
             chartInstance: null,
             pinBuffer: '',
@@ -723,7 +723,7 @@
                     try {
                         app.data = JSON.parse(stored);
                         if (!app.data.expenses) app.data.expenses = [];
-                        if (!app.data.pom) app.data.pom = { price: 10000, stock: 100, capacity: 200 };
+                        if (!app.data.pom) app.data.pom = { price: 12000, stock: 0, capacity: 150 };
                     } catch (e) { console.error("Data Corrupt"); }
                 } else {
                     app.data.products = [{ id: generateID(), name: 'Kopi Hitam', stock: 50, buy: 3000, sell: 5000, code: '123' }];
@@ -1002,9 +1002,9 @@
                 tempTrx: null,
                 render: () => {
                     const s = app.data.pom;
-                    const pct = (s.stock / s.capacity) * 100;
+                    const pct = (s.stock / s.capacity) * 0;
                     document.getElementById('tank-fill').style.width = pct + '%';
-                    document.getElementById('tank-info').innerText = `Stok: ${s.stock.toFixed(1)}L / ${s.capacity}L`;
+                    document.getElementById('tank-info').innerText = `Stok: ${s.stock.toFixed(0)}L / ${s.capacity}L`;
                     document.getElementById('pom-price-display').innerText = `${formatRupiah(s.price)} / Liter`;
                 },
                 calcByRp: (val) => {
