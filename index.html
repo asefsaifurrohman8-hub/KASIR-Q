@@ -1943,22 +1943,19 @@
                 }
             },
 
-            // --- SHOPPING LIST LOGIC (UPDATED WITH POPUP) ---
+            // --- UPDATED SHOPPING LOGIC (ANTI GAGAL) ---
             shopping: {
                 timeout: null,
                 
-                // Buka Popup Input
                 openAddModal: () => {
                     document.getElementById('shop-name-in').value = '';
                     document.getElementById('shop-qty-in').value = '';
                     document.getElementById('shop-unit-in').value = '';
                     document.getElementById('shop-note-in').value = '';
                     app.modal.open('shopping-add');
-                    // Focus ke input pertama
                     setTimeout(() => document.getElementById('shop-name-in').focus(), 300);
                 },
 
-                // Simpan dari Popup ke Array
                 saveFromModal: () => {
                     const name = document.getElementById('shop-name-in').value;
                     const qty = document.getElementById('shop-qty-in').value;
@@ -1978,18 +1975,18 @@
                     app.save();
                     app.shopping.renderSheets();
                     app.modal.close('shopping-add');
-                    app.notify("Item Ditambahkan ke Tabel");
+                    app.notify("Item Ditambahkan");
                     AudioEngine.play('success');
                 },
 
-                // Render Tabel A4
                 renderSheets: () => {
                     const container = document.getElementById('print-area');
                     container.innerHTML = '';
-                    const itemsPerPage = 20; // Batas baris per halaman A4
+                    const itemsPerPage = 20; 
                     const data = app.data.shoppingList;
                     
-                    const totalPages = Math.ceil(Math.max(data.length, 1) / itemsPerPage);
+                    // Render minimal 1 halaman kosong jika data kosong
+                    const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
 
                     for (let i = 0; i < totalPages; i++) {
                         const pageData = data.slice(i * itemsPerPage, (i + 1) * itemsPerPage);
@@ -2006,17 +2003,12 @@
                                 <td class="col-unit">${item.unit}</td>
                                 <td class="col-note">${item.note}</td>
                                 <td class="col-action"><span class="btn-del-row" onclick="app.shopping.delRow(${globalIndex})">×</span></td>
-                            </tr>
-                            `;
+                            </tr>`;
                         });
 
-                        // Isi sisa baris kosong agar tabel terlihat penuh
                         const emptyRowsCount = itemsPerPage - pageData.length;
                         for (let j = 0; j < emptyRowsCount; j++) {
-                             rows += `<tr>
-                                <td class="col-check"></td><td class="col-no"></td><td class="col-item"></td>
-                                <td class="col-qty"></td><td class="col-unit"></td><td class="col-note"></td><td class="col-action"></td>
-                             </tr>`;
+                             rows += `<tr><td class="col-check"></td><td class="col-no"></td><td class="col-item"></td><td class="col-qty"></td><td class="col-unit"></td><td class="col-note"></td><td class="col-action"></td></tr>`;
                         }
 
                         const page = `
@@ -2029,21 +2021,14 @@
                             <table class="excel-table">
                                 <thead>
                                     <tr>
-                                        <th class="col-check">✓</th>
-                                        <th class="col-no">No</th>
-                                        <th class="col-item">Nama Barang</th>
-                                        <th class="col-qty">Jml</th>
-                                        <th class="col-unit">Satuan</th>
-                                        <th class="col-note">Keterangan</th>
+                                        <th class="col-check">✓</th><th class="col-no">No</th><th class="col-item">Nama Barang</th>
+                                        <th class="col-qty">Jml</th><th class="col-unit">Satuan</th><th class="col-note">Keterangan</th>
                                         <th class="col-action">#</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    ${rows}
-                                </tbody>
+                                <tbody>${rows}</tbody>
                             </table>
-                        </div>
-                        `;
+                        </div>`;
                         container.innerHTML += page;
                     }
                 },
@@ -2070,8 +2055,15 @@
                     }
                 },
 
+                // --- PERBAIKAN UTAMA DI SINI ---
                 exportPDF: () => {
-                    app.notify("Memproses PDF...");
+                    // Cek ketersediaan library
+                    if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
+                        alert("Gagal: Koneksi internet diperlukan untuk fitur PDF. Silakan gunakan tombol PRINT.");
+                        return;
+                    }
+
+                    app.notify("Memproses PDF... (Tunggu Sebentar)");
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF('p', 'mm', 'a4');
                     const elements = document.querySelectorAll('.a4-page');
@@ -2079,25 +2071,40 @@
                     const processPage = (index) => {
                         if (index >= elements.length) {
                             doc.save(`Belanjaan-${new Date().toISOString().slice(0,10)}.pdf`);
-                            app.notify("Download PDF Selesai");
+                            app.notify("Download Selesai!");
                             return;
                         }
                         
-                        html2canvas(elements[index], { scale: 2 }).then(canvas => {
-                            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                        // Opsi useCORS: true wajib agar gambar tidak error
+                        html2canvas(elements[index], { 
+                            scale: 2, 
+                            useCORS: true, 
+                            allowTaint: true,
+                            logging: false 
+                        }).then(canvas => {
+                            const imgData = canvas.toDataURL('image/jpeg', 0.8);
                             if (index > 0) doc.addPage();
                             doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
                             processPage(index + 1);
+                        }).catch(err => {
+                            console.error(err);
+                            alert("Terjadi kesalahan rendering gambar. Coba gunakan fitur PRINT.");
                         });
                     };
                     processPage(0);
                 },
 
                 exportJPG: () => {
+                    if (typeof window.html2canvas === 'undefined') {
+                         alert("Butuh internet untuk fitur JPG."); return;
+                    }
                     app.notify("Memproses JPG...");
                     const elements = document.querySelectorAll('.a4-page');
-                    // Hanya halaman pertama sebagai contoh
-                    html2canvas(elements[0], { scale: 3 }).then(canvas => {
+                    
+                    html2canvas(elements[0], { 
+                        scale: 2,
+                        useCORS: true 
+                    }).then(canvas => {
                         const link = document.createElement('a');
                         link.download = `Belanjaan-Page1-${new Date().toISOString()}.jpg`;
                         link.href = canvas.toDataURL('image/jpeg', 0.9);
@@ -2106,6 +2113,7 @@
                     });
                 }
             },
+
 
             // --- SETTINGS & PROFILE ---
             profile: {
